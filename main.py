@@ -10,13 +10,13 @@ sys.setrecursionlimit(10000)
 #To do threshold update, update threshold value and recall train_start?
 
 #training params
-iterations = 1001
-model_checkpoint = 500
+iterations = 20001
+model_checkpoint = 12500
 threshold = 50
 model_names = [VEmbed_full]
 load_tree = True
 verbosity = 0
-initialize_models = False
+initialize_models = True
 attacking_model_path = '/Users/Shuza/Code/Durak/attack_models/attack_model500'
 defending_model_path = '/Users/Shuza/Code/Durak/defend_models/defend_model500'
 model_paths = [attacking_model_path,defending_model_path]
@@ -32,5 +32,5 @@ initialization_params = {
     'initialize_models':initialize_models
 }
 
-#train_start(initialization_params)
+train_start(initialization_params)
 round_robin_split()
