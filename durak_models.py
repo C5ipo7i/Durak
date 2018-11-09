@@ -98,7 +98,7 @@ def VEmbed_full(input_shape,policy_shape,alpha,reg_const):
     #Card embeddings
     card_36_embeddings = Embedding(53,100,input_length=36)
     card_12_embeddings = Embedding(53,100,input_length=12)
-    card_1_embeddings = Embedding(53,100,input_length=(1))
+    card_1_embeddings = Embedding(53,100,input_length=(1,1))
     played_cards_only = card_12_embeddings(played_cards)
     discard_vec_only = card_36_embeddings(discard_vec_only)
     hand_only = card_36_embeddings(hand_only)
