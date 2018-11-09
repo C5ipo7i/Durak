@@ -90,11 +90,11 @@ def VEmbed_full(input_shape,policy_shape,alpha,reg_const):
     hand_only = Lambda(split_param_hand_emb)(X_input)
     possibility_mask = Lambda(split_possibilities_emb)(X_input)
     #Embeddings
-    game_state_only = Embedding(3,25, input_length=1)(game_state_only)
-    remaining_cards_only = Embedding(25,10,input_length=1)(remaining_cards_only)
-    trump_suit_only = Embedding(4,10,input_length=1)(trump_suit_only)
-    hero_hand_length_only = Embedding(37,20,input_length=1)(hero_hand_length_only)
-    villain_hand_length_only = Embedding(37,20,input_length=1)(villain_hand_length_only)
+    game_state_only = Embedding(3,25, input_length=(1,1))(game_state_only)
+    remaining_cards_only = Embedding(25,10,input_length=(1,1))(remaining_cards_only)
+    trump_suit_only = Embedding(4,10,input_length=(1,1))(trump_suit_only)
+    hero_hand_length_only = Embedding(37,20,input_length=(1,1))(hero_hand_length_only)
+    villain_hand_length_only = Embedding(37,20,input_length=(1,1))(villain_hand_length_only)
     #Card embeddings
     card_36_embeddings = Embedding(53,100,input_length=36)
     card_12_embeddings = Embedding(53,100,input_length=12)

@@ -10,7 +10,7 @@ sys.setrecursionlimit(10000)
 #To do threshold update, update threshold value and recall train_start?
 
 #training params
-iterations = 20001
+iterations = 20
 model_checkpoint = 12500
 threshold = 50
 model_names = [VEmbed_full]
@@ -33,4 +33,4 @@ initialization_params = {
 }
 
 train_start(initialization_params)
-round_robin_split()
+#round_robin_split()
