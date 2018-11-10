@@ -17,6 +17,9 @@ from random import randint
 from random import choice
 from keras.models import Model, load_model
 from keras.optimizers import Adam, SGD
+"""
+some stuff
+"""
 
 def train_start(initialization_params):
     #Training parameters
