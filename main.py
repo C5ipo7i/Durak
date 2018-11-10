@@ -1,6 +1,7 @@
 from train import train_start,train_endgame
 from tournament import round_robin_split
 from durak_models import VEmbed_full
+import tensorflow as tf
 import sys
 sys.setrecursionlimit(10000)
 

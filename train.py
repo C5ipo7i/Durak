@@ -3,6 +3,7 @@ from tree_class import Tree,Node
 from durak_utils import model_decision,return_emb_vector,deck
 from durak_models import VEmbed,VEmbed_full
 
+import tensorflow as tf
 import numpy as np
 import copy
 import os
