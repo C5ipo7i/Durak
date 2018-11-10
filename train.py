@@ -3,6 +3,7 @@ from tree_class import Tree,Node
 from durak_utils import model_decision,return_emb_vector,deck
 from durak_models import VEmbed,VEmbed_full
 
+import time
 import tensorflow as tf
 import numpy as np
 import copy
@@ -123,6 +124,7 @@ def train_endgame(initialization_params):
 
 def train(durak,training_dict):
     print('TRAINING')
+    tic = time.time()
     attack_model_path = training_dict['attack_model_path']
     defend_model_path =training_dict['defend_model_path']
     model_attack = training_dict['model_attack']
@@ -303,8 +305,7 @@ def train(durak,training_dict):
     #     #         print('a',a,'player_2_states',player_2_states.shape,'player_2_evs_train',player_2_evs_train.reshape(a,1).shape,'player_2_hot',player_2_hot.shape,'input shapes 2')
     #         model_defend.fit(defend_states,[defend_evs_train.reshape(a,1),player_2_hot],verbose=1)
             #save models for round robins and detailing progress
-        if i % 200:
-            print(i)
+        print(i)
         if i % training_dict['model_checkpoint'] == 0:
             print('MODEL CHECKPOINT')
             attack_path = attack_model_path + str(i)
@@ -318,6 +319,8 @@ def train(durak,training_dict):
     #print results
     print('results')
     print(durak.results[0],durak.results[1])
+    toc = time.time()
+    print("Training took ",str((toc-tic)/60),'Minutes')
 
 def load_gpu_models(model_paths):
     pass

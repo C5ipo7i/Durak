@@ -12,14 +12,16 @@ sys.setrecursionlimit(10000)
 
 #training params
 iterations = 20001
-model_checkpoint = 10000
+model_checkpoint = 5000
 threshold = 50
 model_names = [VEmbed_full]
-load_tree = False
+load_tree = True
 verbosity = 0
-initialize_models = True
-attacking_model_path = '/Users/Shuza/Code/Durak/attack_models/attack_model500'
-defending_model_path = '/Users/Shuza/Code/Durak/defend_models/defend_model500'
+initialize_models = False
+attacking_model_dir = os.path.join(os.path.dirname(sys.argv[0]),'attack_models')
+defending_model_dir = os.path.join(os.path.dirname(sys.argv[0]),'defend_models')
+attacking_model_path = os.path.join(os.path.dirname(sys.argv[0]),'attack_model20000')
+defending_model_path = os.path.join(os.path.dirname(sys.argv[0]),'defend_model20000')
 model_paths = [attacking_model_path,defending_model_path]
 multigpu = True
 #instantiate dictionary
@@ -37,4 +39,4 @@ initialization_params = {
 }
 
 train_start(initialization_params)
-#round_robin_split()
+round_robin_split()
