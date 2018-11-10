@@ -11,8 +11,8 @@ sys.setrecursionlimit(10000)
 #To do threshold update, update threshold value and recall train_start?
 
 #training params
-iterations = 20
-model_checkpoint = 12500
+iterations = 20001
+model_checkpoint = 10000
 threshold = 50
 model_names = [VEmbed_full]
 load_tree = False
@@ -32,7 +32,8 @@ initialization_params = {
     'verbosity':verbosity,
     'model_paths':model_paths,
     'initialize_models':initialize_models,
-    'multigpu':multigpu
+    'multigpu':multigpu,
+    'print':200
 }
 
 train_start(initialization_params)

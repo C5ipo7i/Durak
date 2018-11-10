@@ -56,11 +56,12 @@ def train_start(initialization_params):
         'attack_model_path':attack_model_path,
         'defend_model_path':defend_model_path,
         'previous_winner':previous_winner,
-        'verbosity':initialization_params['verbosity']
+        'verbosity':initialization_params['verbosity'],
+        'print':initialization_params['print']
     }
     train(durak,training_dict)
 
-def train_endgame(load_tree=False):
+def train_endgame(initialization_params):
     from durak_utils import convert_str_to_1hot
     #Testing a particular situation
     endgame_tree_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree_endgame')
@@ -115,7 +116,8 @@ def train_endgame(load_tree=False):
         'attack_model_path':attack_model_path,
         'defend_model_path':defend_model_path,
         'previous_winner':previous_winner,
-        'verbosity':1
+        'verbosity':1,
+        'print':initialization_params['print']
     }
     train(durak,training_dict)
 
@@ -301,6 +303,8 @@ def train(durak,training_dict):
     #     #         print('a',a,'player_2_states',player_2_states.shape,'player_2_evs_train',player_2_evs_train.reshape(a,1).shape,'player_2_hot',player_2_hot.shape,'input shapes 2')
     #         model_defend.fit(defend_states,[defend_evs_train.reshape(a,1),player_2_hot],verbose=1)
             #save models for round robins and detailing progress
+        if i % 200:
+            print(i)
         if i % training_dict['model_checkpoint'] == 0:
             print('MODEL CHECKPOINT')
             attack_path = attack_model_path + str(i)
