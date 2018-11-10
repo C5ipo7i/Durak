@@ -3,6 +3,7 @@ from tournament import round_robin_split
 from durak_models import VEmbed_full
 import tensorflow as tf
 import sys
+import os
 sys.setrecursionlimit(10000)
 
 #train and then tournament and repeat
@@ -11,17 +12,19 @@ sys.setrecursionlimit(10000)
 #To do threshold update, update threshold value and recall train_start?
 
 #training params
-iterations = 20001
+iterations = 30001
 model_checkpoint = 5000
 threshold = 50
 model_names = [VEmbed_full]
 load_tree = True
 verbosity = 0
 initialize_models = False
-attacking_model_dir = os.path.join(os.path.dirname(sys.argv[0]),'attack_models')
-defending_model_dir = os.path.join(os.path.dirname(sys.argv[0]),'defend_models')
-attacking_model_path = os.path.join(os.path.dirname(sys.argv[0]),'attack_model20000')
-defending_model_path = os.path.join(os.path.dirname(sys.argv[0]),'defend_model20000')
+#attacking_model_dir = os.path.join(os.path.dirname(sys.argv[0]),'attack_models')
+#defending_model_dir = os.path.join(os.path.dirname(sys.argv[0]),'defend_models')
+#attacking_model_path = os.path.join(os.path.dirname(sys.argv[0]),'attack_model20000')
+#defending_model_path = os.path.join(os.path.dirname(sys.argv[0]),'defend_model20000')
+attacking_model_path = '/home/shuza/Code/Durak/attack_models/attack_model20000'
+defending_model_path = '/home/shuza/Code/Durak/attack_models/attack_model20000'
 model_paths = [attacking_model_path,defending_model_path]
 multigpu = True
 #instantiate dictionary

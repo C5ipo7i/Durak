@@ -40,6 +40,7 @@ def train_start(initialization_params):
         model_list = [model_attack,model_defend]
     else:
         model_attack,model_defend = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
+    	model_list = [model_attack,model_defend]
     function_list = [model_decision,model_decision]
     #Create the game env
     durak = Durak(deck,model_list,function_list,threshold)
