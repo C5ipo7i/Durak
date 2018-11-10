@@ -20,6 +20,7 @@ initialize_models = True
 attacking_model_path = '/Users/Shuza/Code/Durak/attack_models/attack_model500'
 defending_model_path = '/Users/Shuza/Code/Durak/defend_models/defend_model500'
 model_paths = [attacking_model_path,defending_model_path]
+multigpu = True
 #instantiate dictionary
 initialization_params = {
     'iterations':iterations,
@@ -29,7 +30,8 @@ initialization_params = {
     'load_tree':load_tree,
     'verbosity':verbosity,
     'model_paths':model_paths,
-    'initialize_models':initialize_models
+    'initialize_models':initialize_models,
+    'multigpu':multigpu
 }
 
 train_start(initialization_params)

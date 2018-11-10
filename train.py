@@ -34,10 +34,10 @@ def train_start(initialization_params):
     previous_winner = (False,0)
     if initialization_params['initialize_models'] == True:
         model_names = initialization_params['model_names']
-        model_attack,model_defend = instantiate_models(model_names)
+        model_attack,model_defend = instantiate_models(model_names,initialization_params['multigpu'])
         model_list = [model_attack,model_defend]
     else:
-        model_attack,model_defend = load_models(initialization_params['model_paths'])
+        model_attack,model_defend = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
     function_list = [model_decision,model_decision]
     #Create the game env
     durak = Durak(deck,model_list,function_list,threshold)
@@ -320,7 +320,7 @@ def load_gpu_models(model_paths):
 def instantiate_gpu_models(model_paths):
     pass
 
-def load_models(model_paths):
+def load_models(model_paths,multigpu):
     #model input dimensions for hand generation
     model_input = (266,)
     model_emb_input = (144,)
@@ -339,13 +339,19 @@ def load_models(model_paths):
         model_defend = load_model(model_paths[0])
     # model_first = V1abstract1(model_input,policy_shape,alpha,reg_const)
     # model_second = V1abstract1(model_input,policy_shape,alpha,reg_const)
-    model_attack.compile(optimizer=opt,loss=['mse','categorical_crossentropy'])
-    model_defend.compile(optimizer=opt,loss=['mse','categorical_crossentropy'])
+    if multigpu == True:
+        with tf.device("/cpu:0"):
+            model_attack.compile(optimizer=opt,loss=['mse','categorical_crossentropy'])
+            model_defend.compile(optimizer=opt,loss=['mse','categorical_crossentropy'])
+        model_attack.compile(optimizer=opt,loss=['logcosh','categorical_crossentropy'])
+        model_defend.compile(optimizer=opt,loss=['logcosh','categorical_crossentropy'])
+    else:
+        model_attack.compile(optimizer=opt,loss=['mse','categorical_crossentropy'])
+        model_defend.compile(optimizer=opt,loss=['mse','categorical_crossentropy'])
     model_attack.summary()
-    # model_second.summary()
     return model_attack,model_defend
 
-def instantiate_models(model_names):
+def instantiate_models(model_names,multigpu):
     #model input dimensions for hand generation
     model_input = (266,)
     model_emb_input = (144,)
@@ -364,10 +370,16 @@ def instantiate_models(model_names):
         model_defend = model_names[0](model_emb_input,policy_shape,alpha,reg_const)
     # model_first = V1abstract1(model_input,policy_shape,alpha,reg_const)
     # model_second = V1abstract1(model_input,policy_shape,alpha,reg_const)
-    model_attack.compile(optimizer=opt,loss=['mse','categorical_crossentropy'])
-    model_defend.compile(optimizer=opt,loss=['mse','categorical_crossentropy'])
+    if multigpu == True:
+        with tf.device("/cpu:0"):
+            model_attack.compile(optimizer=opt,loss=['mse','categorical_crossentropy'])
+            model_defend.compile(optimizer=opt,loss=['mse','categorical_crossentropy'])
+        model_attack.compile(optimizer=opt,loss=['logcosh','categorical_crossentropy'])
+        model_defend.compile(optimizer=opt,loss=['logcosh','categorical_crossentropy'])
+    else:
+        model_attack.compile(optimizer=opt,loss=['mse','categorical_crossentropy'])
+        model_defend.compile(optimizer=opt,loss=['mse','categorical_crossentropy'])
     model_attack.summary()
-    # model_second.summary()
     return model_attack,model_defend
 
 if __name__ == '__main__':
