@@ -12,13 +12,13 @@ sys.setrecursionlimit(10000)
 #To do threshold update, update threshold value and recall train_start?
 
 #training params
-iterations = 30001
+iterations = 2
 model_checkpoint = 5000
 threshold = 50
 model_names = [VEmbed_full]
 load_tree = True
 verbosity = 0
-initialize_models = False
+initialize_models = True
 #attacking_model_dir = os.path.join(os.path.dirname(sys.argv[0]),'attack_models')
 #defending_model_dir = os.path.join(os.path.dirname(sys.argv[0]),'defend_models')
 #attacking_model_path = os.path.join(os.path.dirname(sys.argv[0]),'attack_model20000')
@@ -41,5 +41,5 @@ initialization_params = {
     'print':200
 }
 
-train_start(initialization_params)
+#train_start(initialization_params)
 round_robin_split()
