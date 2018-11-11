@@ -202,6 +202,9 @@ def return_emb_vector(durak,features,game_state,hand_vec,possibility_vec,player_
         discard_loc = np.where(discard_vec == 1)[0]
         # print(discard_loc,'discard_loc')              
         temp_pad = 36 - len(discard_loc)
+        if temp_pad < 0:
+            durak.print_game_state()
+            print(len(discard_loc))
         padding = np.full(temp_pad,52)
         discard_emb = np.hstack((discard_loc,padding))
     else:
