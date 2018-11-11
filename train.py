@@ -312,7 +312,7 @@ def train(durak,training_dict):
     #         model_defend.fit(defend_states,[defend_evs_train.reshape(a,1),player_2_hot],verbose=1)
             #save models for round robins and detailing progress
         print(i)
-        if i % training_dict['model_checkpoint'] == 0:
+        if i % training_dict['model_checkpoint'] == 0 and i != 0:
             print('MODEL CHECKPOINT')
             attack_path = attack_model_path + str(i)
             defend_path = defend_model_path + str(i)
