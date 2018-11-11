@@ -16,27 +16,26 @@ def round_robin_split():
     attacking_models = []
     defending_models = []
     model_names = []
-    idx = 0
+    #create teams
+    teams = []
     for file in os.listdir(model_attacking_dir):
         if not file.startswith('.'):
             print(file,'Model')
             path = model_attacking_dir + '/' + file
             print(path,'path')
-            model = load_model(path)
-            attacking_models.append(model)
-            model_names.append('team_'+str(idx))
-        idx += 1
-    for file in os.listdir(model_defending_dir):
-        if not file.startswith('.'):
-            print(file,'Model')
-            path = model_defending_dir + '/' + file
-            print(path,'path')
-            model = load_model(path)
-            defending_models.append(model)
-    #create teams
-    teams = []
-    for index, model in enumerate(attacking_models):
-        teams.append((model,defending_models[index]))
+            attacking_model = load_model(path)
+            model_name = file.strip('attack_')
+            number = file.strip('attack_model')
+            for dfile in os.listdir(model_defending_dir):
+                if not dfile.startswith('.'):
+                    if dfile.strip('defend_') == model_name:
+                        print(dfile,'Model')
+                        path = model_defending_dir + '/' + dfile
+                        print(path,'path')
+                        defending_model = load_model(path)
+                        teams.append((attacking_model,defending_model))
+                        break
+            model_names.append('team_'+str(model_name))
     #model input dimensions for hand generation
     tourney_iterations = 50
     function_list = [model_decision,model_decision]
