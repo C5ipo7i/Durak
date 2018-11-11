@@ -12,13 +12,7 @@ sys.setrecursionlimit(10000)
 #To do threshold update, update threshold value and recall train_start?
 
 #training params
-iterations = 2
-model_checkpoint = 5000
-threshold = 50
 model_names = [VEmbed_full]
-load_tree = True
-verbosity = 0
-initialize_models = True
 #attacking_model_dir = os.path.join(os.path.dirname(sys.argv[0]),'attack_models')
 #defending_model_dir = os.path.join(os.path.dirname(sys.argv[0]),'defend_models')
 #attacking_model_path = os.path.join(os.path.dirname(sys.argv[0]),'attack_model20000')
@@ -26,18 +20,22 @@ initialize_models = True
 attacking_model_path = '/home/shuza/Code/Durak/attack_models/attack_model20000'
 defending_model_path = '/home/shuza/Code/Durak/attack_models/attack_model20000'
 model_paths = [attacking_model_path,defending_model_path]
-multigpu = True
+tree_endgame_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree_endgame')
+tree_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree')
 #instantiate dictionary
 initialization_params = {
-    'iterations':iterations,
-    'model_checkpoint':model_checkpoint,
-    'threshold':threshold,
+    'iterations':2,
+    'model_checkpoint':5000,
+    'threshold':50,
     'model_names':model_names,
-    'load_tree':load_tree,
-    'verbosity':verbosity,
+    'load_tree':True,
+    'verbosity':0,
     'model_paths':model_paths,
-    'initialize_models':initialize_models,
-    'multigpu':multigpu,
+    'initialize_models':True,
+    'multigpu':True,
+    'save_tree':True,
+    'tree_path':tree_path,
+    'tree_endgame_path':tree_endgame_path,
     'print':200
 }
 

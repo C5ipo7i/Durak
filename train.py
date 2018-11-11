@@ -30,8 +30,7 @@ def train_start(initialization_params):
     #Threshold of randomness. 0 = completely random. 100 = entirely according to the model output
     threshold = initialization_params['threshold']
     #model dirs
-    tree_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree')
-    print(tree_path,'tree')
+    tree_path = initialization_params['tree_path']
     attack_models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'attack_models')
     defend_models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'defend_models')
     attack_model_path = os.path.join(attack_models_dir,'attack_model')
@@ -49,7 +48,8 @@ def train_start(initialization_params):
     #Create the game env
     durak = Durak(deck,model_list,function_list,threshold)
     if initialization_params['load_tree'] == True:
-        durak.load_tree(tree_path)
+        if os.path.getsize(target) > 0:
+            durak.load_tree(tree_path)
 
     training_dict = {
         'iterations':iterations,
@@ -70,7 +70,7 @@ def train_start(initialization_params):
 def train_endgame(initialization_params):
     from durak_utils import convert_str_to_1hot
     #Testing a particular situation
-    endgame_tree_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree_endgame')
+    endgame_tree_path = initialization_params['tree_endgame_path']
     deck_pos = []
     trump_card_pos = [14, 's']
     attacking_player_pos = 0
@@ -318,20 +318,16 @@ def train(durak,training_dict):
             model_attack.save(attack_path)
             model_defend.save(defend_path)
             #Save tree
-            durak.save_tree(tree_path)
+            if training_dict['save_tree'] == True:
+                durak.save_tree(tree_path)
     #Save tree
-    durak.save_tree(tree_path)
+    if training_dict['save_tree'] == True:
+        durak.save_tree(tree_path)
     #print results
     print('results')
     print(durak.results[0],durak.results[1])
     toc = time.time()
     print("Training took ",str((toc-tic)/60),'Minutes')
-
-def load_gpu_models(model_paths):
-    pass
-
-def instantiate_gpu_models(model_paths):
-    pass
 
 def load_models(model_paths,multigpu):
     #model input dimensions for hand generation
