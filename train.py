@@ -48,7 +48,7 @@ def train_start(initialization_params):
     #Create the game env
     durak = Durak(deck,model_list,function_list,threshold)
     if initialization_params['load_tree'] == True:
-        if os.path.getsize(target) > 0:
+        if os.path.getsize(tree_path) > 0:
             durak.load_tree(tree_path)
 
     training_dict = {
@@ -63,6 +63,7 @@ def train_start(initialization_params):
         'defend_model_path':defend_model_path,
         'previous_winner':previous_winner,
         'verbosity':initialization_params['verbosity'],
+        'save_tree':initialization_params['save_tree'],
         'print':initialization_params['print']
     }
     train(durak,training_dict)
