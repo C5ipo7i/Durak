@@ -31,6 +31,7 @@ def train_start(initialization_params):
     threshold = initialization_params['threshold']
     #model dirs
     tree_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree')
+    print(tree_path,'tree')
     attack_models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'attack_models')
     defend_models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'defend_models')
     attack_model_path = os.path.join(attack_models_dir,'attack_model')

@@ -41,5 +41,5 @@ initialization_params = {
     'print':200
 }
 
-#train_start(initialization_params)
+train_start(initialization_params)
 round_robin_split()
