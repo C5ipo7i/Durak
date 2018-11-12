@@ -379,6 +379,7 @@ def train_on_batch_rl(durak,training_dict):
     print("Training on batch took ",str((toc-tic)/60),'Minutes')
 
 def trigger(inputs):
+    print('in trigger')
     dictionary = inputs[0]
     model_list = dictionary['model_list']
     threshold = dictionary['threshold']
@@ -442,7 +443,7 @@ def train_on_batch(durak,training_dict):
     tree_path = training_dict['tree_path']
     start = training_dict['start']
     previous_winner = training_dict['previous_winner']
-    pool = Pool(processes=4)
+    pool = Pool(processes=2)
     #training env
     for j in range(training_dict['learning_cycles']):
         inputs = [[training_dict],[training_dict],[training_dict],[training_dict]]
