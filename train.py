@@ -64,9 +64,13 @@ def train_start(initialization_params):
         'previous_winner':previous_winner,
         'verbosity':initialization_params['verbosity'],
         'save_tree':initialization_params['save_tree'],
-        'print':initialization_params['print']
+        'print':initialization_params['print'],
+        'learning_cycles':initialization_params['learning_cycles']
     }
-    train(durak,training_dict)
+    if initialization_params['train_on_batch'] == True:
+        train_on_batch(durak,training_dict)
+    else:
+        train(durak,training_dict)
 
 def train_endgame(initialization_params):
     from durak_utils import convert_str_to_1hot
@@ -93,23 +97,27 @@ def train_endgame(initialization_params):
     }
     #Training parameters
     num_epochs = 1
-    iterations = 250
     training_cycles = 1
-    model_checkpoint = 500
+    iterations = initialization_params['iterations']
+    model_checkpoint = initialization_params['model_checkpoint']
     #Threshold of randomness. 0 = completely random. 100 = entirely according to the model output
-    threshold = 50
-    #Test durak game env
+    threshold = initialization_params['threshold']
+    #model dirs
     attack_models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'attack_models')
     defend_models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'defend_models')
     attack_model_path = os.path.join(attack_models_dir,'attack_model')
     defend_model_path = os.path.join(defend_models_dir,'defend_model')
     #load models
-    model_names = [VEmbed]
-    model_attack,model_defend = instantiate_models(model_names)
-    model_list = [model_attack,model_defend]
+    if initialization_params['initialize_models'] == True:
+        model_names = initialization_params['model_names']
+        model_attack,model_defend = instantiate_models(model_names,initialization_params['multigpu'])
+        model_list = [model_attack,model_defend]
+    else:
+        model_attack,model_defend = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
+        model_list = [model_attack,model_defend]
     function_list = [model_decision,model_decision]
     durak = Durak(deck,model_list,function_list,threshold)
-    if load_tree == True:
+    if initialization_params['load_tree'] == True:
         durak.load_tree(tree_path)
     previous_winner = (False,0)
     training_dict = {
@@ -123,10 +131,15 @@ def train_endgame(initialization_params):
         'attack_model_path':attack_model_path,
         'defend_model_path':defend_model_path,
         'previous_winner':previous_winner,
-        'verbosity':1,
-        'print':initialization_params['print']
+        'verbosity':initialization_params['verbosity'],
+        'save_tree':initialization_params['save_tree'],
+        'print':initialization_params['print'],
+        'learning_cycles':initialization_params['learning_cycles']
     }
-    train(durak,training_dict)
+    if initialization_params['train_on_batch'] == True:
+        train_on_batch(durak,training_dict)
+    else:
+        train(durak,training_dict)
 
 def train(durak,training_dict):
     print('TRAINING')
@@ -147,42 +160,10 @@ def train(durak,training_dict):
         else:
             durak.init_game(previous_winner)
         durak.play_game()
-        #previous_winner = durak.game_state.previous_winner
-        #count nodes
-    #     number_first_nodes = durak.game_state.first_root.count_nodes(durak.game_state.first_root,0)
-    #     number_second_nodes = durak.game_state.second_root.count_nodes(durak.game_state.second_root,0)
-        #Propogate EV and get game_states/actions
-        # print(durak.game_state.first_player,'first player')
         first_outcome = durak.players[durak.game_state.first_player].outcome
         second_outcome = durak.players[(durak.game_state.first_player + 1)%2].outcome
-        # print(first_outcome,second_outcome,'outcomes of iteration '+str(i))
-        # print('results')
-        # print(durak.results[0],durak.results[1])
         played_1_attacks,played_1_attack_evs,played_1_defends,played_1_defend_evs = durak.game_state.first_node.fast_propagate(durak.game_state.first_node,first_outcome)
         played_2_attacks,played_2_attack_evs,played_2_defends,played_2_defend_evs = durak.game_state.second_node.fast_propagate(durak.game_state.second_node,second_outcome)
-        #separate game_states from actions. Both players start game_state first. Then alternates
-    #     first_actions_temp = first_actions[:-1]
-    #     second_actions_temp = second_actions[:-1]
-        #last EV is 0 because for the last node, it has no children and thus has no outcome? WHY? FIX THIS
-    #     first_evs_temp = first_evs[1:]
-    #     second_evs_temp = second_evs[1:]
-    #     print(len(first_actions_temp),'len actions')
-    #     print(len(second_actions_temp),'len actions')
-        # print(played_1_attack_evs,'played_1_attack_evs')
-        # print(played_1_defend_evs,'played_1_defend_evs')
-        # print(played_2_attack_evs,'played_2_attack_evs')
-        # print(played_2_defend_evs,'played_2_defend_evs')
-    #     print(len(first_evs_temp))
-    # #     print(len(second_evs_temp))
-    #     player_1_actions = first_actions[0::2]
-    #     player_2_actions = second_actions[0::2]
-    # #     print(player_1_actions,'player_1_actions')
-    # #     print(player_2_actions,'player_2_actions')
-    #     player_1_game_states = first_actions[1::2]
-    #     player_2_game_states = second_actions[1::2]
-    #     print(player_1_game_states,'player_1_game_states')
-    #     print(player_2_game_states,'player_2_game_states')
-        #grab odd and even value locations for game_state and action respectively
         played_1_attack_actions = played_1_attacks[0::2]
         played_1_attack_game_states = played_1_attacks[1::2]
         played_1_defend_actions = played_1_defends[0::2]
@@ -198,119 +179,10 @@ def train(durak,training_dict):
         defends = np.hstack((played_1_defend_actions,played_2_defend_actions))
         defend_gamestates = np.hstack((played_1_defend_game_states,played_2_defend_game_states))
         defend_evs = np.hstack((played_1_defend_evs,played_2_defend_evs))
-        # print(attacks,'attacks')
-        # print(defends,'defends')
-        value_attacks = np.where(attack_evs>-1)[0]
-        value_defends = np.where(defend_evs>-1)[0]
-        # print(value_attacks,'value_attacks')
-        # print(value_defends,'value_defends')
-    #     game_states_value_1 = []
-    #     actions_value_1 = []
-    #     [actions_value_1.append(value) if value % 2 == 0 else game_states_value_1.append(value) for value in value_locations_1]
-    #     game_states_value_2 = []
-    #     actions_value_2 = []
-    #     [actions_value_2.append(value) if value % 2 == 0 else game_states_value_2.append(value) for value in value_locations_2]
-    #     game_states_value_1 = value_locations_1[1::2]
-    #     game_states_value_2 = value_locations_2[1::2]
-    #     actions_value_1 = value_locations_1[0::2]
-    #     actions_value_2 = value_locations_2[0::2]
-        size_attacks = value_attacks.size
-        size_defends = value_defends.size
-    #     print(value_locations_1,'value_locations_1')
-    #     print(value_locations_2,'value_locations_2')
-    #     print(game_states_value_1,'game_states_value_1')
-    #     print(game_states_value_2,'game_states_value_2')
-    #     print(actions_value_1,'actions_value_1')
-    #     print(actions_value_2,'actions_value_2')
-        ### train on everything ###
-        # print('value attacks')
         a = attack_evs.shape[0]
-        # print(a,'a')
-        attack_states_list = [pickle.loads(binascii.unhexlify(state.encode('ascii'))) for state in attack_gamestates]
-        #[print(state,'game_state') for state in attack_states_list]
-        attack_states = np.vstack(attack_states_list)
-        player_1_hot = np.zeros(53)
-        player_1_hot[int(attacks[0])] = 1
-        if len(attacks) > 1:
-            for action in attacks[1:]:
-                temp = np.zeros(53)
-                temp[int(action)] = 1
-                player_1_hot = np.vstack((player_1_hot,temp))
-        else:
-            player_1_hot = player_1_hot.reshape(a,53)
-        model_attack.fit(attack_states,[attack_evs.reshape(a,1),player_1_hot],verbose=training_dict['verbosity'])
-        #train defending
-        # print('defending')
-        a = defend_evs.shape[0]
-        defend_states_list = [pickle.loads(binascii.unhexlify(state.encode('ascii'))) for state in defend_gamestates]
-        defend_states = np.vstack(defend_states_list) 
-        #[print(state,'game_state') for state in attack_states_list]
-        player_2_hot = np.zeros(53)
-        player_2_hot[int(defends[0])] = 1
-        if len(defends) > 1:
-            for action in defends[1:]:
-                temp = np.zeros(53)
-                temp[int(action)] = 1
-                player_2_hot = np.vstack((player_2_hot,temp))
-        else:
-            player_2_hot = player_2_hot.reshape(a,53)
-        model_defend.fit(defend_states,[defend_evs.reshape(a,1),player_2_hot],verbose=training_dict['verbosity'])
-            
-        ### value training ###
-    #     if size_attacks:
-    #         print('value attacks')
-    #     #         print(player_1_actions,'player_1_actions')
-    #     #         print(actions_value_1,'actions_value_1')
-    #     #         if len(game_states_value_1) > len(actions_value_1):
-    #     #             game_states_value_1 = game_states_value_1[1:]
-    #         attack_str_states = attack_gamestates[value_attacks]
-    #         attack_evs_train = attack_evs[value_attacks]
-    #         print(attack_evs_train,'attack_evs_train')
-    #         a = attack_evs_train.shape[0]
-    #         print(a,'a')
-    #         attack_states_list = [pickle.loads(binascii.unhexlify(state.encode('ascii'))) for state in attack_str_states]
-    #         #[print(state,'game_state') for state in attack_states_list]
-    #         attack_states = np.vstack(attack_states_list)
-    #         player_1_hot = np.zeros(53)
-    #         player_1_hot[int(attacks[value_attacks[0]])] = 1
-    #         if len(value_attacks) > 1:
-    #             for action in attacks[value_attacks[1:]]:
-    #                 temp = np.zeros(53)
-    #                 temp[int(action)] = 1
-    #                 player_1_hot = np.vstack((player_1_hot,temp))
-    #         else:
-    #             player_1_hot = player_1_hot.reshape(a,53)
-    #     #         print(player_1_evs_train,'player_1_evs_train')
-    #     #         print('a',a,'player_1_states',player_1_states.shape,'player_1_evs_train',player_1_evs_train.reshape(a,1).shape,'player_1_hot',player_1_hot.shape,'input shapes 1')
-    #         model_attack.fit(attack_states,[attack_evs_train.reshape(a,1),player_1_hot],verbose=1)
-    #     #train defending
-    #     if size_defends:
-    #         print('value defends')
-    #     #         print(player_2_actions,'player_2_actions')
-    #     #         print(actions_value_2,'actions_value_2')
-    #     #         if len(game_states_value_2) > len(actions_value_2):
-    #     #             game_states_value_2 = game_states_value_2[1:]
-    #         defend_str_states = defend_gamestates[value_defends]
-    #         defend_evs_train = defend_evs[value_defends]
-    #         print(defend_evs_train,'defend_evs_train')
-    #         a = defend_evs_train.shape[0]
-    #         defend_states_list = [pickle.loads(binascii.unhexlify(state.encode('ascii'))) for state in defend_str_states]
-    #         defend_states = np.vstack(defend_states_list) 
-    #         #[print(state,'game_state') for state in attack_states_list]
-    #         player_2_hot = np.zeros(53)
-    #         player_2_hot[int(defends[value_defends[0]])] = 1
-    #         if len(value_defends) > 1:
-    #             for action in defends[value_defends[1:]]:
-    #                 temp = np.zeros(53)
-    #                 temp[int(action)] = 1
-    #                 player_2_hot = np.vstack((player_2_hot,temp))
-    #         else:
-    #             player_2_hot = player_2_hot.reshape(a,53)
-    #         #player_1_states = player_1_states[value_locations_1]
-    #     #         print(player_2_evs_train,'player_2_evs_train')
-    #     #         print('a',a,'player_2_states',player_2_states.shape,'player_2_evs_train',player_2_evs_train.reshape(a,1).shape,'player_2_hot',player_2_hot.shape,'input shapes 2')
-    #         model_defend.fit(defend_states,[defend_evs_train.reshape(a,1),player_2_hot],verbose=1)
-            #save models for round robins and detailing progress
+        input_attack_gamestates,input_attack_evs,player_1_hot,input_defend_gamestates,input_defend_evs,player_2_hot = return_everything_train(attacks,attack_evs,attack_gamestates,defends,defend_evs,defend_gamestates)
+        model_attack.fit(input_attack_gamestates,[input_attack_evs,player_1_hot],verbose=1)
+        model_defend.fit(input_defend_gamestates,[input_defend_evs,player_2_hot],verbose=1)
         print(i)
         if i % training_dict['model_checkpoint'] == 0 and i != 0:
             print('MODEL CHECKPOINT')
@@ -329,6 +201,155 @@ def train(durak,training_dict):
     print(durak.results[0],durak.results[1])
     toc = time.time()
     print("Training took ",str((toc-tic)/60),'Minutes')
+
+def train_on_batch(durak,training_dict):
+    print('TRAINING ON BATCH')
+    tic = time.time()
+    attack_model_path = training_dict['attack_model_path']
+    defend_model_path =training_dict['defend_model_path']
+    model_attack = training_dict['model_attack']
+    model_defend = training_dict['model_defend']
+    tree_path = training_dict['tree_path']
+    start = training_dict['start']
+    previous_winner = training_dict['previous_winner']
+    #training env
+    for j in range(training_dict['learning_cycles']):
+        for i in range(training_dict['iterations']):
+            if start == 'endgame':
+                durak.start_from_state(training_dict['situation_dict'])
+            else:
+                durak.init_game(previous_winner)
+            durak.play_game()
+            first_outcome = durak.players[durak.game_state.first_player].outcome
+            second_outcome = durak.players[(durak.game_state.first_player + 1)%2].outcome
+            played_1_attacks,played_1_attack_evs,played_1_defends,played_1_defend_evs = durak.game_state.first_node.fast_propagate(durak.game_state.first_node,first_outcome)
+            played_2_attacks,played_2_attack_evs,played_2_defends,played_2_defend_evs = durak.game_state.second_node.fast_propagate(durak.game_state.second_node,second_outcome)
+            played_1_attack_actions = played_1_attacks[0::2]
+            played_1_attack_game_states = played_1_attacks[1::2]
+            played_1_defend_actions = played_1_defends[0::2]
+            played_1_defend_game_states = played_1_defends[1::2]
+            played_2_attack_actions = played_2_attacks[0::2]
+            played_2_attack_game_states = played_2_attacks[1::2]
+            played_2_defend_actions = played_2_defends[0::2]
+            played_2_defend_game_states = played_2_defends[1::2]
+            #stack attacks and defend for training
+            attacks = np.hstack((played_1_attack_actions,played_2_attack_actions))
+            attack_gamestates = np.hstack((played_1_attack_game_states,played_2_attack_game_states))
+            attack_evs = np.hstack((played_1_attack_evs,played_2_attack_evs))
+            defends = np.hstack((played_1_defend_actions,played_2_defend_actions))
+            defend_gamestates = np.hstack((played_1_defend_game_states,played_2_defend_game_states))
+            defend_evs = np.hstack((played_1_defend_evs,played_2_defend_evs))
+            value_attacks = np.where(attack_evs>-1)[0]
+            value_defends = np.where(defend_evs>-1)[0]
+            size_attacks = value_attacks.size
+            size_defends = value_defends.size    
+            #get model inputs
+            input_attack_gamestates,input_attack_evs,player_1_hot,input_defend_gamestates,input_defend_evs,player_2_hot = return_everything_train(attacks,attack_evs,attack_gamestates,defends,defend_evs,defend_gamestates)
+            print('i')
+            if i != 0:
+                train_attack_gamestates = np.vstack((train_attack_gamestates,input_attack_gamestates))
+                train_attack_evs = np.vstack((train_attack_evs,input_attack_evs))
+                train_attack_policy = np.vstack((train_attack_policy,player_1_hot))
+                train_defend_gamestates = np.vstack((train_defend_gamestates,input_defend_gamestates))
+                train_defend_evs = np.vstack((train_defend_evs,input_defend_evs))
+                train_defend_policy = np.vstack((train_defend_policy,player_2_hot))
+            else:
+                train_attack_gamestates = input_attack_gamestates
+                train_attack_evs = input_attack_evs
+                train_attack_policy = player_1_hot
+                train_defend_gamestates = input_defend_gamestates
+                train_defend_evs = input_defend_evs
+                train_defend_policy = player_2_hot
+            print('j')
+        print('MODEL CHECKPOINT ',j)
+        model_attack.fit(train_attack_gamestates,[train_attack_evs,train_attack_policy],verbose=1)
+        model_defend.fit(train_defend_gamestates,[train_defend_evs,train_defend_policy],verbose=1)
+        attack_path = attack_model_path + str(j)
+        defend_path = defend_model_path + str(j)
+        model_attack.save(attack_path)
+        model_defend.save(defend_path)
+        #Save tree
+        if training_dict['save_tree'] == True:
+            durak.save_tree(tree_path)
+    #print results
+    print('results')
+    print(durak.results[0],durak.results[1])
+    toc = time.time()
+    print("Training on batch took ",str((toc-tic)/60),'Minutes')
+
+def return_everything_train(attacks,attack_evs,attack_gamestates,defends,defend_evs,defend_gamestates):
+    a = attack_evs.shape[0]
+    attack_states_list = [pickle.loads(binascii.unhexlify(state.encode('ascii'))) for state in attack_gamestates]
+    attack_states = np.vstack(attack_states_list)
+    player_1_hot = np.zeros(53)
+    player_1_hot[int(attacks[0])] = 1
+    if len(attacks) > 1:
+        for action in attacks[1:]:
+            temp = np.zeros(53)
+            temp[int(action)] = 1
+            player_1_hot = np.vstack((player_1_hot,temp))
+    else:
+        player_1_hot = player_1_hot.reshape(a,53)
+    #train defending
+    b = defend_evs.shape[0]
+    defend_states_list = [pickle.loads(binascii.unhexlify(state.encode('ascii'))) for state in defend_gamestates]
+    defend_states = np.vstack(defend_states_list) 
+    player_2_hot = np.zeros(53)
+    player_2_hot[int(defends[0])] = 1
+    if len(defends) > 1:
+        for action in defends[1:]:
+            temp = np.zeros(53)
+            temp[int(action)] = 1
+            player_2_hot = np.vstack((player_2_hot,temp))
+    else:
+        player_2_hot = player_2_hot.reshape(a,53)
+    return attack_states,attack_evs.reshape(a,1),player_1_hot,defend_states,defend_evs.reshape(b,1),player_2_hot  
+
+def return_value_train(attacks,attack_evs,attack_gamestates,defends,defend_evs,defend_gamestates):
+    ### value training ###
+    value_attacks = np.where(attack_evs>-1)[0]
+    value_defends = np.where(defend_evs>-1)[0]
+    size_attacks = value_attacks.size
+    size_defends = value_defends.size
+    if size_attacks:
+        attack_str_states = attack_gamestates[value_attacks]
+        attack_evs_train = attack_evs[value_attacks]
+        a = attack_evs_train.shape[0]
+        attack_states_list = [pickle.loads(binascii.unhexlify(state.encode('ascii'))) for state in attack_str_states]
+        attack_states = np.vstack(attack_states_list)
+        player_1_hot = np.zeros(53)
+        player_1_hot[int(attacks[value_attacks[0]])] = 1
+        if len(value_attacks) > 1:
+            for action in attacks[value_attacks[1:]]:
+                temp = np.zeros(53)
+                temp[int(action)] = 1
+                player_1_hot = np.vstack((player_1_hot,temp))
+        else:
+            player_1_hot = player_1_hot.reshape(a,53)
+        attack_input_vector = attack_states,[attack_evs.reshape(a,1),player_1_hot]
+    else:
+        attack_input_vector = np.zeros()
+    #train defending
+    if size_defends:
+        defend_str_states = defend_gamestates[value_defends]
+        defend_evs_train = defend_evs[value_defends]
+        a = defend_evs_train.shape[0]
+        defend_states_list = [pickle.loads(binascii.unhexlify(state.encode('ascii'))) for state in defend_str_states]
+        defend_states = np.vstack(defend_states_list) 
+        player_2_hot = np.zeros(53)
+        player_2_hot[int(defends[value_defends[0]])] = 1
+        if len(value_defends) > 1:
+            for action in defends[value_defends[1:]]:
+                temp = np.zeros(53)
+                temp[int(action)] = 1
+                player_2_hot = np.vstack((player_2_hot,temp))
+        else:
+            player_2_hot = player_2_hot.reshape(a,53)
+        defend_input_vector = defend_states,[defend_evs.reshape(a,1),player_2_hot]
+    else:
+        defend_input_vector = np.zeros()
+    return attack_input_vector,defend_input_vector     
+
 
 def load_models(model_paths,multigpu):
     #model input dimensions for hand generation
@@ -393,4 +414,4 @@ def instantiate_models(model_names,multigpu):
     return model_attack,model_defend
 
 if __name__ == '__main__':
-    train_endgame()
+    pass

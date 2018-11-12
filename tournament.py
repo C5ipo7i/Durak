@@ -35,7 +35,7 @@ def round_robin_split():
                         defending_model = load_model(path)
                         teams.append((attacking_model,defending_model))
                         break
-            model_names.append('team_'+str(model_name))
+            model_names.append('team_'+str(number))
     #model input dimensions for hand generation
     tourney_iterations = 50
     function_list = [model_decision,model_decision]
