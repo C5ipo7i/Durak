@@ -12,7 +12,7 @@ sys.setrecursionlimit(10000)
 #To do threshold update, update threshold value and recall train_start?
 
 #training params
-model_names = [VEmbed_ab1]
+model_names = [VEmbed_full]
 #attacking_model_dir = os.path.join(os.path.dirname(sys.argv[0]),'attack_models')
 #defending_model_dir = os.path.join(os.path.dirname(sys.argv[0]),'defend_models')
 #attacking_model_path = os.path.join(os.path.dirname(sys.argv[0]),'attack_model20000')

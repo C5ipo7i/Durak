@@ -111,10 +111,10 @@ def train_endgame(initialization_params):
     if initialization_params['initialize_models'] == True:
         model_names = initialization_params['model_names']
         model_attack,model_defend = instantiate_models(model_names,initialization_params['multigpu'])
-        model_list = [model_attack,model_defend]
+        model_list = [model_attack,model_attack]
     else:
         model_attack,model_defend = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
-        model_list = [model_attack,model_defend]
+        model_list = [model_attack,model_attack]
     function_list = [model_decision,model_decision]
     durak = Durak(deck,model_list,function_list,threshold)
     if initialization_params['load_tree'] == True:
@@ -263,7 +263,7 @@ def train_on_batch(durak,training_dict):
             print('j')
         print('MODEL CHECKPOINT ',j)
         model_attack.fit(train_attack_gamestates,[train_attack_evs,train_attack_policy],verbose=1)
-        model_defend.fit(train_defend_gamestates,[train_defend_evs,train_defend_policy],verbose=1)
+        model_attack.fit(train_defend_gamestates,[train_defend_evs,train_defend_policy],verbose=1)
         attack_path = attack_model_path + str(j)
         defend_path = defend_model_path + str(j)
         model_attack.save(attack_path)
