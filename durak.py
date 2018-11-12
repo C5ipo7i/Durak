@@ -33,11 +33,13 @@ class Durak(object):
         if tournament == False:
             self.models[-1]._make_predict_function()
             self.models[-2]._make_predict_function()
-        else: #fix this #####
-            self.models[0][0]._make_predict_function()
-            self.models[0][1]._make_predict_function()
-            self.models[1][0]._make_predict_function()
-            self.models[1][1]._make_predict_function()
+        else: #Going back to single model for both attack and defense
+            # self.models[0][0]._make_predict_function()
+            # self.models[0][1]._make_predict_function()
+            # self.models[1][0]._make_predict_function()
+            # self.models[1][1]._make_predict_function()
+            self.models[-1]._make_predict_function()
+            self.models[-2]._make_predict_function()
 
         self.funcs = funcs
         self.results = [0,0]

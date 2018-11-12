@@ -31,19 +31,31 @@ def train_start(initialization_params):
     threshold = initialization_params['threshold']
     #model dirs
     tree_path = initialization_params['tree_path']
+    models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'durak_models')
     attack_models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'attack_models')
     defend_models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'defend_models')
+    model_path = os.path.join(models_dir,'single_model')
     attack_model_path = os.path.join(attack_models_dir,'attack_model')
     defend_model_path = os.path.join(defend_models_dir,'defend_model')
     #trunk = openpickle(tree_path)
     previous_winner = (False,0)
-    if initialization_params['initialize_models'] == True:
-        model_names = initialization_params['model_names']
-        model_attack,model_defend = instantiate_models(model_names,initialization_params['multigpu'])
-        model_list = [model_attack,model_defend]
+    if initialization_params['single_model'] == False:
+        #load split models for attack and defense
+        if initialization_params['initialize_models'] == True:
+            model_names = initialization_params['model_names']
+            model_attack,model_defend = instantiate_models(model_names,initialization_params['multigpu'])
+            model_list = [model_attack,model_attack]
+        else:
+            model_attack,model_defend = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
+            model_list = [model_attack,model_attack]
     else:
-        model_attack,model_defend = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
-        model_list = [model_attack,model_defend]
+        if initialization_params['initialize_models'] == True:
+            model_names = initialization_params['model_names']
+            model,model_2 = instantiate_models(model_names,initialization_params['multigpu'])
+            model_list = [model,model]
+        else:
+            model,model_2 = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
+            model_list = [model,model]
     function_list = [model_decision,model_decision]
     #Create the game env
     durak = Durak(deck,model_list,function_list,threshold)
@@ -53,8 +65,10 @@ def train_start(initialization_params):
 
     training_dict = {
         'iterations':iterations,
-        'model_attack':model_attack,
-        'model_defend':model_defend,
+        'model':model,
+        'model_path':model_path,
+        # 'model_attack':model_attack,
+        # 'model_defend':model_defend,
         'tree_path':tree_path,
         'start':'beginning',
         'situation_dict':None,
@@ -103,18 +117,30 @@ def train_endgame(initialization_params):
     #Threshold of randomness. 0 = completely random. 100 = entirely according to the model output
     threshold = initialization_params['threshold']
     #model dirs
+    models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'durak_models')
     attack_models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'attack_models')
     defend_models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'defend_models')
+    model_path = os.path.join(models_dir,'single_model')
     attack_model_path = os.path.join(attack_models_dir,'attack_model')
     defend_model_path = os.path.join(defend_models_dir,'defend_model')
     #load models
-    if initialization_params['initialize_models'] == True:
-        model_names = initialization_params['model_names']
-        model_attack,model_defend = instantiate_models(model_names,initialization_params['multigpu'])
-        model_list = [model_attack,model_attack]
+    if initialization_params['single_model'] == False:
+        #load split models for attack and defense
+        if initialization_params['initialize_models'] == True:
+            model_names = initialization_params['model_names']
+            model_attack,model_defend = instantiate_models(model_names,initialization_params['multigpu'])
+            model_list = [model_attack,model_attack]
+        else:
+            model_attack,model_defend = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
+            model_list = [model_attack,model_attack]
     else:
-        model_attack,model_defend = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
-        model_list = [model_attack,model_attack]
+        if initialization_params['initialize_models'] == True:
+            model_names = initialization_params['model_names']
+            model,model_2 = instantiate_models(model_names,initialization_params['multigpu'])
+            model_list = [model,model]
+        else:
+            model,model_2 = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
+            model_list = [model,model]
     function_list = [model_decision,model_decision]
     durak = Durak(deck,model_list,function_list,threshold)
     if initialization_params['load_tree'] == True:
@@ -122,8 +148,10 @@ def train_endgame(initialization_params):
     previous_winner = (False,0)
     training_dict = {
         'iterations':iterations,
-        'model_attack':model_attack,
-        'model_defend':model_defend,
+        'model':model,
+        'model_path':model_path,
+        # 'model_attack':model_attack,
+        # 'model_defend':model_defend,
         'tree_path':endgame_tree_path,
         'start':'endgame',
         'situation_dict':situation_dict,
@@ -205,10 +233,8 @@ def train(durak,training_dict):
 def train_on_batch(durak,training_dict):
     print('TRAINING ON BATCH')
     tic = time.time()
-    attack_model_path = training_dict['attack_model_path']
-    defend_model_path =training_dict['defend_model_path']
-    model_attack = training_dict['model_attack']
-    model_defend = training_dict['model_defend']
+    model_path = training_dict['model_path']
+    model = training_dict['model']
     tree_path = training_dict['tree_path']
     start = training_dict['start']
     previous_winner = training_dict['previous_winner']
@@ -262,12 +288,10 @@ def train_on_batch(durak,training_dict):
                 train_defend_policy = player_2_hot
             print('j')
         print('MODEL CHECKPOINT ',j)
-        model_attack.fit(train_attack_gamestates,[train_attack_evs,train_attack_policy],verbose=1)
-        model_attack.fit(train_defend_gamestates,[train_defend_evs,train_defend_policy],verbose=1)
-        attack_path = attack_model_path + str(j)
-        defend_path = defend_model_path + str(j)
-        model_attack.save(attack_path)
-        model_defend.save(defend_path)
+        model.fit(train_attack_gamestates,[train_attack_evs,train_attack_policy],verbose=1)
+        model.fit(train_defend_gamestates,[train_defend_evs,train_defend_policy],verbose=1)
+        recent_model_path = model_path + str(j)
+        model.save(recent_model_path)
         #Save tree
         if training_dict['save_tree'] == True:
             durak.save_tree(tree_path)

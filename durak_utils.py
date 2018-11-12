@@ -74,26 +74,26 @@ def model_decision(possibility_vec,features,hand_vec,players,player_id,game_stat
     #print(model_emb_input)
     #For splitting between attack and defend models
     #If defend call defend model
-    if durak.tournament == False:
-        if game_state == 1:
-            # print('defending')
-            model_ev,model_action = durak.models[1].predict(model_emb_input)
-        else:
-            #call attack model for states 0 and 2
-            # print('attacking')
-            model_ev,model_action = durak.models[0].predict(model_emb_input)
-    else:
-        #tournament, two groups of 2 attacking and defending models
-        if game_state == 1:
-            model_ev,model_action = durak.models[player_id][1].predict(model_emb_input)
-        else:
-            model_ev,model_action = durak.models[player_id][0].predict(model_emb_input)
+    # if durak.tournament == False:
+    #     if game_state == 1:
+    #         # print('defending')
+    #         model_ev,model_action = durak.models[1].predict(model_emb_input)
+    #     else:
+    #         #call attack model for states 0 and 2
+    #         # print('attacking')
+    #         model_ev,model_action = durak.models[0].predict(model_emb_input)
+    # else:
+    #     #tournament, two groups of 2 attacking and defending models
+    #     if game_state == 1:
+    #         model_ev,model_action = durak.models[player_id][1].predict(model_emb_input)
+    #     else:
+    #         model_ev,model_action = durak.models[player_id][0].predict(model_emb_input)
 
     #for splitting between players
-#     if player_id == 0:
-#         model_ev,model_action = durak.models[0].predict(model_emb_input)
-#     else:
-#         model_ev,model_action = durak.models[1].predict(model_emb_input)
+    if player_id == 0:
+        model_ev,model_action = durak.models[0].predict(model_emb_input)
+    else:
+        model_ev,model_action = durak.models[1].predict(model_emb_input)
         
     #For 1hot inputs
 #     masked_choices = np.multiply(model_action,possibility_vec)
@@ -116,13 +116,13 @@ def model_decision(possibility_vec,features,hand_vec,players,player_id,game_stat
     masked_choices = np.multiply(model_action.reshape(53,),possibility_vec)
     probability_vector = np.divide(masked_choices,np.sum(masked_choices)).flatten()
 #     print(possibility_vec,'possibility_vec')
-    print(durak.players[0].hand,'player 1 hand')
-    print(durak.players[1].hand,'player 2 hand')
-    print(durak.game_state.attacking_player,'attacking_player')
-    print(durak.game_state.played_card,'played card')
-    print(durak.game_state.played_cards,'played cards')
-    print(model_ev,'model_ev')
-    print(probability_vector,'probability_vector')
+    # print(durak.players[0].hand,'player 1 hand')
+    # print(durak.players[1].hand,'player 2 hand')
+    # print(durak.game_state.attacking_player,'attacking_player')
+    # print(durak.game_state.played_card,'played card')
+    # print(durak.game_state.played_cards,'played cards')
+    # print(model_ev,'model_ev')
+    # print(probability_vector,'probability_vector')
 #     print(possibilities,'possibilities')
 #     print(features.first_player,'starting player id')
 #     print(durak.possibilities.shape,probability_vector.shape,'should be equal')

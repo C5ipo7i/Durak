@@ -28,7 +28,7 @@ def play_vs_splitmodel(attack_path,defend_path):
     threshold = 50
     model_list = [model_attack,model_defend]
     function_list = [player,model_decision]
-    durak = Durak(deck,model_list,function_list,threshold,play=True,tournament=True)
+    durak = Durak(deck,model_list,function_list,threshold,play=True,tournament=False)
     previous_winner = (False,0)
     durak.init_game(previous_winner)
     durak.play_game()

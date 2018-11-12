@@ -85,7 +85,7 @@ def round_robin_split():
 def round_robin():
     #Round Robin
     #Load models
-    model_dir = os.path.join(os.path.dirname(sys.argv[0]), 'Main_models')
+    model_dir = os.path.join(os.path.dirname(sys.argv[0]), 'durak_models')
     models = []
     model_names = []
     for file in os.listdir(model_dir):
@@ -102,6 +102,7 @@ def round_robin():
     attribute_input = (1,1)
     on_1d = True
     tourney_iterations = 50
+    function_list = [model_decision,model_decision]
     #Compute matchups
     num_players = len(models)
     matchups = [(((models[i],models[j]),(models[j],models[i]))) for i in range(num_players-1) for j in range(i+1,num_players)]
@@ -115,7 +116,7 @@ def round_robin():
         for match in matchup:
             model_list = [match[0],match[1]]
             durak = Durak(deck,model_list,function_list,tournament=True)
-            previous_winner = (False,0)
+            previous_winner = (True,0) #So each player goes first
             #function_list = [model_decision,model_decision]
             for i in range(tourney_iterations):
                 durak.init_game(previous_winner)

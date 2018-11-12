@@ -1,5 +1,5 @@
 from train import train_start,train_endgame
-from tournament import round_robin_split
+from tournament import round_robin_split,round_robin
 from durak_models import VEmbed_full,VEmbed_V1,VEmbed_ab3,VEmbed_ab1,VEmbed
 import tensorflow as tf
 import sys
@@ -24,6 +24,7 @@ tree_endgame_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree_e
 tree_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree')
 #instantiate dictionary
 initialization_params = {
+    'single_model':True,
     'train_on_batch':True,
     'learning_cycles':2,
     'iterations':250,
@@ -41,6 +42,7 @@ initialization_params = {
     'print':200
 }
 
-train_endgame(initialization_params)
+# train_endgame(initialization_params)
 #train_start(initialization_params)
 #round_robin_split()
+round_robin()
