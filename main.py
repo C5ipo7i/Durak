@@ -26,12 +26,12 @@ tree_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree')
 initialization_params = {
     'single_model':True,
     'train_on_batch':True,
-    'learning_cycles':2,
-    'iterations':250,
+    'learning_cycles':10,
+    'iterations':500,
     'model_checkpoint':5000,
     'threshold':50,
     'model_names':model_names,
-    'load_tree':False,
+    'load_tree':True,
     'verbosity':0,
     'model_paths':model_paths,
     'initialize_models':True,
@@ -43,6 +43,6 @@ initialization_params = {
 }
 
 # train_endgame(initialization_params)
-#train_start(initialization_params)
+train_start(initialization_params)
 #round_robin_split()
-round_robin()
+#round_robin()

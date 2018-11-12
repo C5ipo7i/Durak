@@ -141,6 +141,7 @@ def round_robin():
         j = inserts[matchup][1][0]
         score_table[i][j] = player_1
     #print(score_table)
+    print('{} Tournament games'.format(tourney_iterations*2))
     for player in range(num_players):
         print(model_names[player],score_table[player],'Total',sum(score_table[player]))
     toc = time.time()

@@ -211,7 +211,6 @@ def train(durak,training_dict):
         input_attack_gamestates,input_attack_evs,player_1_hot,input_defend_gamestates,input_defend_evs,player_2_hot = return_everything_train(attacks,attack_evs,attack_gamestates,defends,defend_evs,defend_gamestates)
         model_attack.fit(input_attack_gamestates,[input_attack_evs,player_1_hot],verbose=1)
         model_defend.fit(input_defend_gamestates,[input_defend_evs,player_2_hot],verbose=1)
-        print(i)
         if i % training_dict['model_checkpoint'] == 0 and i != 0:
             print('MODEL CHECKPOINT')
             attack_path = attack_model_path + str(i)
@@ -271,7 +270,6 @@ def train_on_batch(durak,training_dict):
             size_defends = value_defends.size    
             #get model inputs
             input_attack_gamestates,input_attack_evs,player_1_hot,input_defend_gamestates,input_defend_evs,player_2_hot = return_everything_train(attacks,attack_evs,attack_gamestates,defends,defend_evs,defend_gamestates)
-            print('i')
             if i != 0:
                 train_attack_gamestates = np.vstack((train_attack_gamestates,input_attack_gamestates))
                 train_attack_evs = np.vstack((train_attack_evs,input_attack_evs))
@@ -286,7 +284,6 @@ def train_on_batch(durak,training_dict):
                 train_defend_gamestates = input_defend_gamestates
                 train_defend_evs = input_defend_evs
                 train_defend_policy = player_2_hot
-            print('j')
         print('MODEL CHECKPOINT ',j)
         model.fit(train_attack_gamestates,[train_attack_evs,train_attack_policy],verbose=1)
         model.fit(train_defend_gamestates,[train_defend_evs,train_defend_policy],verbose=1)
