@@ -65,6 +65,7 @@ def train_start(initialization_params):
 
     training_dict = {
         'iterations':iterations,
+        'epochs':initialization_params['epochs'],
         'model':model,
         'model_path':model_path,
         # 'model_attack':model_attack,
@@ -148,6 +149,7 @@ def train_endgame(initialization_params):
     previous_winner = (False,0)
     training_dict = {
         'iterations':iterations,
+        'epochs':initialization_params['epochs'],
         'model':model,
         'model_path':model_path,
         # 'model_attack':model_attack,
@@ -285,8 +287,8 @@ def train_on_batch(durak,training_dict):
                 train_defend_evs = input_defend_evs
                 train_defend_policy = player_2_hot
         print('MODEL CHECKPOINT ',j)
-        model.fit(train_attack_gamestates,[train_attack_evs,train_attack_policy],verbose=1)
-        model.fit(train_defend_gamestates,[train_defend_evs,train_defend_policy],verbose=1)
+        model.fit(train_attack_gamestates,[train_attack_evs,train_attack_policy],epochs=training_dict['epochs'],verbose=1)
+        model.fit(train_defend_gamestates,[train_defend_evs,train_defend_policy],epochs=training_dict['epochs'],verbose=1)
         recent_model_path = model_path + str(j)
         model.save(recent_model_path)
         #Save tree

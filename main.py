@@ -32,6 +32,7 @@ initialization_params = {
     'threshold':50,
     'model_names':model_names,
     'load_tree':True,
+    'epochs':5,
     'verbosity':0,
     'model_paths':model_paths,
     'initialize_models':True,
