@@ -19,7 +19,7 @@ model_names = [VEmbed_full]
 #defending_model_path = os.path.join(os.path.dirname(sys.argv[0]),'defend_model20000')
 attacking_model_path = '/home/shuza/Code/Durak/attack_models/attack_model50k'
 defending_model_path = '/home/shuza/Code/Durak/defend_models/defend_model50k'
-model_path = '/home/shuza/Code/Durak/durak_models/single_model0'
+model_path = '/home/shuza/Code/Durak/durak_models/single_model1'
 model_paths = [model_path,model_path]
 tree_endgame_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree_endgame')
 tree_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree')
@@ -27,21 +27,22 @@ tree_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree')
 initialization_params = {
     'single_model':True,
     'train_on_batch':True,
-    'learning_cycles':41,
-    'iterations':1501,
+    'learning_cycles':1,
+    'iterations':51,
     'model_checkpoint':5000,
     'threshold':50,
     'model_names':model_names,
-    'load_tree':True,
+    'load_tree':False,
     'epochs':5,
     'verbosity':0,
     'model_paths':model_paths,
     'initialize_models':False,
     'multigpu':True,
-    'save_tree':True,
+    'save_tree':False,
     'tree_path':tree_path,
     'tree_endgame_path':tree_endgame_path,
-    'print':200
+    'print':200,
+    'rl':False
 }
 
 # train_endgame(initialization_params)

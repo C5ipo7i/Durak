@@ -4,6 +4,7 @@ from tree_class import Tree,Node
 from durak_utils import model_decision,model_decision_rl,return_emb_vector,deck
 from durak_models import VEmbed,VEmbed_full
 
+from multiprocessing import Pool
 import time
 import tensorflow as tf
 import numpy as np
@@ -56,7 +57,7 @@ def train_start(initialization_params):
             model_list = [model,model]
         else:
             model,model_2 = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
-            model_list = [model,model]
+            model_list = [model._make_predict_function(),model._make_predict_function()]
 
     training_dict = {
         'iterations':iterations,
@@ -152,7 +153,7 @@ def train_endgame(initialization_params):
             model_list = [model,model]
         else:
             model,model_2 = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
-            model_list = [model,model]
+            model_list = [model._make_predict_function(),model._make_predict_function()]
     previous_winner = (False,0)
     training_dict = {
         'iterations':iterations,
@@ -338,10 +339,10 @@ def train_on_batch_rl(durak,training_dict):
             #stack attacks and defend for training
             played_1_actions = np.hstack((played_1_actions))
             played_1_game_states = np.hstack((played_1_game_states))
-            player_1_evs =
+            #player_1_evs =
             played_2_actions = np.hstack((played_2_actions))
             played_2_game_states = np.hstack((played_2_game_states))
-            player_2_evs =
+            #player_2_evs =
             
             value_attacks = np.where(attack_evs>-1)[0]
             value_defends = np.where(defend_evs>-1)[0]
@@ -430,6 +431,7 @@ def trigger(inputs):
             train_defend_gamestates = input_defend_gamestates
             train_defend_evs = input_defend_evs
             train_defend_policy = player_2_hot
+        print(i,'ith iteration')
     return train_attack_gamestates,train_attack_evs,train_attack_policy,train_defend_gamestates,train_defend_evs,train_defend_policy
 
 def train_on_batch(durak,training_dict):
