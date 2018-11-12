@@ -1,6 +1,7 @@
 from durak import Durak
+from durak_rl import Durak as DRL
 from tree_class import Tree,Node
-from durak_utils import model_decision,return_emb_vector,deck
+from durak_utils import model_decision,model_decision_rl,return_emb_vector,deck
 from durak_models import VEmbed,VEmbed_full
 
 import time
@@ -56,12 +57,6 @@ def train_start(initialization_params):
         else:
             model,model_2 = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
             model_list = [model,model]
-    function_list = [model_decision,model_decision]
-    #Create the game env
-    durak = Durak(deck,model_list,function_list,threshold)
-    if initialization_params['load_tree'] == True:
-        if os.path.getsize(tree_path) > 0:
-            durak.load_tree(tree_path)
 
     training_dict = {
         'iterations':iterations,
@@ -80,12 +75,28 @@ def train_start(initialization_params):
         'verbosity':initialization_params['verbosity'],
         'save_tree':initialization_params['save_tree'],
         'print':initialization_params['print'],
+        'model_list':model_list,
         'learning_cycles':initialization_params['learning_cycles']
     }
-    if initialization_params['train_on_batch'] == True:
-        train_on_batch(durak,training_dict)
+    if initialization_params['rl'] == True:
+        function_list = [model_decision_rl,model_decision_rl]
+        #Create the game env
+        durak = DRL(deck,model_list,function_list,threshold)
+        if initialization_params['train_on_batch'] == True:
+            train_on_batch_rl(durak,training_dict)
+        else:
+            train_rl(durak,training_dict)
     else:
-        train(durak,training_dict)
+        function_list = [model_decision,model_decision]
+        #Create the game env
+        durak = Durak(deck,model_list,function_list,threshold)
+        if initialization_params['load_tree'] == True:
+            if os.path.getsize(tree_path) > 0:
+                durak.load_tree(tree_path)
+        if initialization_params['train_on_batch'] == True:
+            train_on_batch(durak,training_dict)
+        else:
+            train(durak,training_dict)
 
 def train_endgame(initialization_params):
     from durak_utils import convert_str_to_1hot
@@ -142,10 +153,6 @@ def train_endgame(initialization_params):
         else:
             model,model_2 = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
             model_list = [model,model]
-    function_list = [model_decision,model_decision]
-    durak = Durak(deck,model_list,function_list,threshold)
-    if initialization_params['load_tree'] == True:
-        durak.load_tree(tree_path)
     previous_winner = (False,0)
     training_dict = {
         'iterations':iterations,
@@ -164,12 +171,85 @@ def train_endgame(initialization_params):
         'verbosity':initialization_params['verbosity'],
         'save_tree':initialization_params['save_tree'],
         'print':initialization_params['print'],
+        'model_list':model_list,
         'learning_cycles':initialization_params['learning_cycles']
     }
-    if initialization_params['train_on_batch'] == True:
-        train_on_batch(durak,training_dict)
+    if initialization_params['rl'] == True:
+        function_list = [model_decision_rl,model_decision_rl]
+        durak = DRL(deck,model_list,function_list,threshold)
+        if initialization_params['train_on_batch'] == True:
+            train_on_batch_rl(durak,training_dict)
+        else:
+            train_rl(durak,training_dict)
     else:
-        train(durak,training_dict)
+        function_list = [model_decision,model_decision]
+        durak = Durak(deck,model_list,function_list,threshold)
+        if initialization_params['load_tree'] == True:
+            durak.load_tree(tree_path)
+        if initialization_params['train_on_batch'] == True:
+            train_on_batch(durak,training_dict)
+        else:
+            train(durak,training_dict)
+
+def train_rl(durak,training_dict):
+    print('TRAINING RL')
+    tic = time.time()
+    attack_model_path = training_dict['attack_model_path']
+    defend_model_path =training_dict['defend_model_path']
+    model_attack = training_dict['model_attack']
+    model_defend = training_dict['model_defend']
+    tree_path = training_dict['tree_path']
+    start = training_dict['start']
+    previous_winner = training_dict['previous_winner']
+    #training env
+    for i in range(training_dict['iterations']):
+    #     print(previous_winner,'previous_winner')
+    #     durak.update_game_state()
+        if start == 'endgame':
+            durak.start_from_state(training_dict['situation_dict'])
+        else:
+            durak.init_game(previous_winner)
+        durak.play_game()
+        first_outcome = durak.players[durak.game_state.first_player].outcome
+        second_outcome = durak.players[(durak.game_state.first_player + 1)%2].outcome
+        played_1_attacks,played_1_attack_evs,played_1_defends,played_1_defend_evs = durak.game_state.first_node.fast_propagate(durak.game_state.first_node,first_outcome)
+        played_2_attacks,played_2_attack_evs,played_2_defends,played_2_defend_evs = durak.game_state.second_node.fast_propagate(durak.game_state.second_node,second_outcome)
+        played_1_attack_actions = played_1_attacks[0::2]
+        played_1_attack_game_states = played_1_attacks[1::2]
+        played_1_defend_actions = played_1_defends[0::2]
+        played_1_defend_game_states = played_1_defends[1::2]
+        played_2_attack_actions = played_2_attacks[0::2]
+        played_2_attack_game_states = played_2_attacks[1::2]
+        played_2_defend_actions = played_2_defends[0::2]
+        played_2_defend_game_states = played_2_defends[1::2]
+        #stack attacks and defend for training
+        attacks = np.hstack((played_1_attack_actions,played_2_attack_actions))
+        attack_gamestates = np.hstack((played_1_attack_game_states,played_2_attack_game_states))
+        attack_evs = np.hstack((played_1_attack_evs,played_2_attack_evs))
+        defends = np.hstack((played_1_defend_actions,played_2_defend_actions))
+        defend_gamestates = np.hstack((played_1_defend_game_states,played_2_defend_game_states))
+        defend_evs = np.hstack((played_1_defend_evs,played_2_defend_evs))
+        a = attack_evs.shape[0]
+        input_attack_gamestates,input_attack_evs,player_1_hot,input_defend_gamestates,input_defend_evs,player_2_hot = return_everything_train(attacks,attack_evs,attack_gamestates,defends,defend_evs,defend_gamestates)
+        model_attack.fit(input_attack_gamestates,[input_attack_evs,player_1_hot],verbose=1)
+        model_defend.fit(input_defend_gamestates,[input_defend_evs,player_2_hot],verbose=1)
+        if i % training_dict['model_checkpoint'] == 0 and i != 0:
+            print('MODEL CHECKPOINT')
+            attack_path = attack_model_path + str(i)
+            defend_path = defend_model_path + str(i)
+            model_attack.save(attack_path)
+            model_defend.save(defend_path)
+            #Save tree
+            if training_dict['save_tree'] == True:
+                durak.save_tree(tree_path)
+    #Save tree
+    if training_dict['save_tree'] == True:
+        durak.save_tree(tree_path)
+    #print results
+    print('results')
+    print(durak.results[0],durak.results[1])
+    toc = time.time()
+    print("Training took ",str((toc-tic)/60),'Minutes')
 
 def train(durak,training_dict):
     print('TRAINING')
@@ -231,7 +311,157 @@ def train(durak,training_dict):
     toc = time.time()
     print("Training took ",str((toc-tic)/60),'Minutes')
 
+def train_on_batch_rl(durak,training_dict):
+    print('TRAINING ON BATCH RL')
+    tic = time.time()
+    model_path = training_dict['model_path']
+    model = training_dict['model']
+    tree_path = training_dict['tree_path']
+    start = training_dict['start']
+    previous_winner = training_dict['previous_winner']
+    #training env
+    for j in range(training_dict['learning_cycles']):
+        for i in range(training_dict['iterations']):
+            if start == 'endgame':
+                durak.start_from_state(training_dict['situation_dict'])
+            else:
+                durak.init_game(previous_winner)
+            durak.play_game()
+            first_outcome = durak.players[durak.game_state.first_player].outcome
+            second_outcome = durak.players[(durak.game_state.first_player + 1)%2].outcome
+            player_1_hist = durak.game_state.player_1_history
+            player_2_hist = durak.game_state.player_2_history
+            played_1_actions = player_1_hist[0::2]
+            played_1_game_states = player_1_hist[1::2]
+            played_2_actions = player_2_hist[0::2]
+            played_2_game_states = player_2_hist[1::2]
+            #stack attacks and defend for training
+            played_1_actions = np.hstack((played_1_actions))
+            played_1_game_states = np.hstack((played_1_game_states))
+            player_1_evs =
+            played_2_actions = np.hstack((played_2_actions))
+            played_2_game_states = np.hstack((played_2_game_states))
+            player_2_evs =
+            
+            value_attacks = np.where(attack_evs>-1)[0]
+            value_defends = np.where(defend_evs>-1)[0]
+            size_attacks = value_attacks.size
+            size_defends = value_defends.size    
+            #get model inputs
+            input_attack_gamestates,input_attack_evs,player_1_hot,input_defend_gamestates,input_defend_evs,player_2_hot = return_everything_train(attacks,attack_evs,attack_gamestates,defends,defend_evs,defend_gamestates)
+            if i != 0:
+                train_attack_gamestates = np.vstack((train_attack_gamestates,input_attack_gamestates))
+                train_attack_evs = np.vstack((train_attack_evs,input_attack_evs))
+                train_attack_policy = np.vstack((train_attack_policy,player_1_hot))
+                train_defend_gamestates = np.vstack((train_defend_gamestates,input_defend_gamestates))
+                train_defend_evs = np.vstack((train_defend_evs,input_defend_evs))
+                train_defend_policy = np.vstack((train_defend_policy,player_2_hot))
+            else:
+                train_attack_gamestates = input_attack_gamestates
+                train_attack_evs = input_attack_evs
+                train_attack_policy = player_1_hot
+                train_defend_gamestates = input_defend_gamestates
+                train_defend_evs = input_defend_evs
+                train_defend_policy = player_2_hot
+        print('MODEL CHECKPOINT ',j)
+        model.fit(train_attack_gamestates,[train_attack_evs,train_attack_policy],epochs=training_dict['epochs'],verbose=1)
+        model.fit(train_defend_gamestates,[train_defend_evs,train_defend_policy],epochs=training_dict['epochs'],verbose=1)
+        recent_model_path = model_path + str(j)
+        model.save(recent_model_path)
+        #Save tree
+        if training_dict['save_tree'] == True:
+            durak.save_tree(tree_path)
+    #print results
+    print('results')
+    print(durak.results[0],durak.results[1])
+    toc = time.time()
+    print("Training on batch took ",str((toc-tic)/60),'Minutes')
+
+def trigger(inputs):
+    dictionary = inputs[0]
+    model_list = dictionary['model_list']
+    threshold = dictionary['threshold']
+    function_list = [model_decision,model_decision]
+    durak = Durak(deck,model_list,function_list,threshold)
+    iterations = dictionary['iterations']
+    start = dictionary['start']
+    for i in range(iterations):
+        if start == 'endgame':
+            durak.start_from_state(training_dict['situation_dict'])
+        else:
+            durak.init_game(previous_winner)
+        durak.play_game()
+        first_outcome = durak.players[durak.game_state.first_player].outcome
+        second_outcome = durak.players[(durak.game_state.first_player + 1)%2].outcome
+        played_1_attacks,played_1_attack_evs,played_1_defends,played_1_defend_evs = durak.game_state.first_node.fast_propagate(durak.game_state.first_node,first_outcome)
+        played_2_attacks,played_2_attack_evs,played_2_defends,played_2_defend_evs = durak.game_state.second_node.fast_propagate(durak.game_state.second_node,second_outcome)
+        played_1_attack_actions = played_1_attacks[0::2]
+        played_1_attack_game_states = played_1_attacks[1::2]
+        played_1_defend_actions = played_1_defends[0::2]
+        played_1_defend_game_states = played_1_defends[1::2]
+        played_2_attack_actions = played_2_attacks[0::2]
+        played_2_attack_game_states = played_2_attacks[1::2]
+        played_2_defend_actions = played_2_defends[0::2]
+        played_2_defend_game_states = played_2_defends[1::2]
+        #stack attacks and defend for training
+        attacks = np.hstack((played_1_attack_actions,played_2_attack_actions))
+        attack_gamestates = np.hstack((played_1_attack_game_states,played_2_attack_game_states))
+        attack_evs = np.hstack((played_1_attack_evs,played_2_attack_evs))
+        defends = np.hstack((played_1_defend_actions,played_2_defend_actions))
+        defend_gamestates = np.hstack((played_1_defend_game_states,played_2_defend_game_states))
+        defend_evs = np.hstack((played_1_defend_evs,played_2_defend_evs))
+        value_attacks = np.where(attack_evs>-1)[0]
+        value_defends = np.where(defend_evs>-1)[0]
+        size_attacks = value_attacks.size
+        size_defends = value_defends.size    
+        #get model inputs
+        input_attack_gamestates,input_attack_evs,player_1_hot,input_defend_gamestates,input_defend_evs,player_2_hot = return_everything_train(attacks,attack_evs,attack_gamestates,defends,defend_evs,defend_gamestates)
+        if i != 0:
+            train_attack_gamestates = np.vstack((train_attack_gamestates,input_attack_gamestates))
+            train_attack_evs = np.vstack((train_attack_evs,input_attack_evs))
+            train_attack_policy = np.vstack((train_attack_policy,player_1_hot))
+            train_defend_gamestates = np.vstack((train_defend_gamestates,input_defend_gamestates))
+            train_defend_evs = np.vstack((train_defend_evs,input_defend_evs))
+            train_defend_policy = np.vstack((train_defend_policy,player_2_hot))
+        else:
+            train_attack_gamestates = input_attack_gamestates
+            train_attack_evs = input_attack_evs
+            train_attack_policy = player_1_hot
+            train_defend_gamestates = input_defend_gamestates
+            train_defend_evs = input_defend_evs
+            train_defend_policy = player_2_hot
+    return train_attack_gamestates,train_attack_evs,train_attack_policy,train_defend_gamestates,train_defend_evs,train_defend_policy
+
 def train_on_batch(durak,training_dict):
+    print('TRAINING ON BATCH')
+    tic = time.time()
+    model_path = training_dict['model_path']
+    model = training_dict['model']
+    tree_path = training_dict['tree_path']
+    start = training_dict['start']
+    previous_winner = training_dict['previous_winner']
+    pool = Pool(processes=4)
+    #training env
+    for j in range(training_dict['learning_cycles']):
+        inputs = [[training_dict],[training_dict],[training_dict],[training_dict]]
+        results = pool.map(trigger,inputs)
+        print(results,'results')
+        print('MODEL CHECKPOINT ',j)
+        model.fit(train_attack_gamestates,[train_attack_evs,train_attack_policy],epochs=training_dict['epochs'],verbose=1)
+        model.fit(train_defend_gamestates,[train_defend_evs,train_defend_policy],epochs=training_dict['epochs'],verbose=1)
+        recent_model_path = model_path + str(j)
+        model.save(recent_model_path)
+        #Save tree
+        if training_dict['save_tree'] == True:
+            durak.save_tree(tree_path)
+    #print results
+    print('results')
+    print(durak.results[0],durak.results[1])
+    toc = time.time()
+    print("Training on batch took ",str((toc-tic)/60),'Minutes')
+
+
+def train_on_batch_save(durak,training_dict):
     print('TRAINING ON BATCH')
     tic = time.time()
     model_path = training_dict['model_path']
