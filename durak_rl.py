@@ -45,20 +45,6 @@ class Durak(object):
         self.possibilities = np.arange(53)
         self.epsilon = 0.0001
         self.tournament = tournament
-        #reusing previously generated tree
-        if trunk == None:
-            self.trunk = Tree()
-        else:
-            self.trunk = trunk
-        
-    def save_tree(self,tree_path):
-        with open(tree_path, 'wb') as handle:
-            pickle.dump(self.trunk, handle, protocol = pickle.HIGHEST_PROTOCOL)
-
-    def load_tree(self,tree_path):
-        with open(tree_path, 'rb') as handle:
-            tree = pickle.load(handle)
-        self.trunk = tree
         
     def start_from_state(self,game_state_dict):
         self.play_deck = copy.deepcopy(game_state_dict['deck'])

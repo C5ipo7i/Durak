@@ -57,7 +57,7 @@ def train_start(initialization_params):
             model_list = [model,model]
         else:
             model,model_2 = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
-            model_list = [model._make_predict_function(),model._make_predict_function()]
+            model_list = [model,model]
 
     training_dict = {
         'iterations':iterations,
@@ -77,7 +77,8 @@ def train_start(initialization_params):
         'save_tree':initialization_params['save_tree'],
         'print':initialization_params['print'],
         'model_list':model_list,
-        'learning_cycles':initialization_params['learning_cycles']
+        'learning_cycles':initialization_params['learning_cycles'],
+        'discount_factor':initialization_params['discount_factor']
     }
     if initialization_params['rl'] == True:
         function_list = [model_decision_rl,model_decision_rl]
@@ -153,7 +154,7 @@ def train_endgame(initialization_params):
             model_list = [model,model]
         else:
             model,model_2 = load_models(initialization_params['model_paths'],initialization_params['multigpu'])
-            model_list = [model._make_predict_function(),model._make_predict_function()]
+            model_list = [model,model]
     previous_winner = (False,0)
     training_dict = {
         'iterations':iterations,
@@ -173,7 +174,8 @@ def train_endgame(initialization_params):
         'save_tree':initialization_params['save_tree'],
         'print':initialization_params['print'],
         'model_list':model_list,
-        'learning_cycles':initialization_params['learning_cycles']
+        'learning_cycles':initialization_params['learning_cycles'],
+        'discount_factor':initialization_params['discount_factor']
     }
     if initialization_params['rl'] == True:
         function_list = [model_decision_rl,model_decision_rl]
@@ -320,6 +322,7 @@ def train_on_batch_rl(durak,training_dict):
     tree_path = training_dict['tree_path']
     start = training_dict['start']
     previous_winner = training_dict['previous_winner']
+    discount_factor = training_dict['discount_factor']
     #training env
     for j in range(training_dict['learning_cycles']):
         for i in range(training_dict['iterations']):
@@ -331,42 +334,54 @@ def train_on_batch_rl(durak,training_dict):
             first_outcome = durak.players[durak.game_state.first_player].outcome
             second_outcome = durak.players[(durak.game_state.first_player + 1)%2].outcome
             player_1_hist = durak.game_state.player_1_history
-            player_2_hist = durak.game_state.player_2_history
-            played_1_actions = player_1_hist[0::2]
-            played_1_game_states = player_1_hist[1::2]
-            played_2_actions = player_2_hist[0::2]
-            played_2_game_states = player_2_hist[1::2]
-            #stack attacks and defend for training
+            played_1_actions = player_1_hist[1::2]
+            played_1_game_states = player_1_hist[0::2]
             played_1_actions = np.hstack((played_1_actions))
             played_1_game_states = np.hstack((played_1_game_states))
-            #player_1_evs =
+            player_2_hist = durak.game_state.player_2_history
+            played_2_actions = player_2_hist[1::2]
+            played_2_game_states = player_2_hist[0::2]
             played_2_actions = np.hstack((played_2_actions))
             played_2_game_states = np.hstack((played_2_game_states))
-            #player_2_evs =
-            
-            value_attacks = np.where(attack_evs>-1)[0]
-            value_defends = np.where(defend_evs>-1)[0]
-            size_attacks = value_attacks.size
-            size_defends = value_defends.size    
-            #get model inputs
-            input_attack_gamestates,input_attack_evs,player_1_hot,input_defend_gamestates,input_defend_evs,player_2_hot = return_everything_train(attacks,attack_evs,attack_gamestates,defends,defend_evs,defend_gamestates)
-            if i != 0:
-                train_attack_gamestates = np.vstack((train_attack_gamestates,input_attack_gamestates))
-                train_attack_evs = np.vstack((train_attack_evs,input_attack_evs))
-                train_attack_policy = np.vstack((train_attack_policy,player_1_hot))
-                train_defend_gamestates = np.vstack((train_defend_gamestates,input_defend_gamestates))
-                train_defend_evs = np.vstack((train_defend_evs,input_defend_evs))
-                train_defend_policy = np.vstack((train_defend_policy,player_2_hot))
+            if first_outcome > 0:
+                #we train on positive outcomes or draws only
+                actions = played_1_actions
+                game_states = played_1_game_states
+                player_1_length = played_1_game_states.shape[0]
+                player_1_rewards = np.full(player_1_length,first_outcome)
+                discounted_rewards = np.array([1*discount_factor**i for i in range(0,player_1_length)])
+                game_states = played_1_game_states
+            elif second_outcome > 0:
+                actions = played_2_actions
+                game_states = played_2_game_states
+                player_2_length = played_2_game_states.shape[0]
+                player_2_rewards = np.full(player_2_length,second_outcome)
+                discounted_rewards = np.array([1*discount_factor**i for i in range(0,player_2_length)])
+                game_states = played_2_game_states
             else:
-                train_attack_gamestates = input_attack_gamestates
-                train_attack_evs = input_attack_evs
-                train_attack_policy = player_1_hot
-                train_defend_gamestates = input_defend_gamestates
-                train_defend_evs = input_defend_evs
-                train_defend_policy = player_2_hot
+                #draw train on both
+                player_2_length = played_2_game_states.shape[0]
+                player_2_rewards = np.full(player_2_length,second_outcome)
+                discounted_rewards_2 = np.array([1*discount_factor**i for i in range(0,player_2_length)])
+                player_1_length = played_1_game_states.shape[0]
+                player_1_rewards = np.full(player_1_length,first_outcome)
+                discounted_rewards_1 = np.array([1*discount_factor**i for i in range(0,player_1_length)])
+                discounted_rewards = np.hstack((discounted_rewards_1,discounted_rewards_2))
+                actions = np.vstack((played_1_actions,played_2_actions))
+                game_states = [played_1_game_states,played_2_game_states]
+            #get model inputs
+            actions_train,gamestates_train,discounted_rewards_train = return_everything_train_rl(actions,game_states,discounted_rewards)
+            print('hi')
+            if i != 0:
+                historical_gamestates = np.vstack((historical_gamestates,gamestates_train))
+                historical_discounted_rewards = np.vstack((historical_discounted_rewards,discounted_rewards_train))
+                historical_actions = np.vstack((historical_actions,actions_train))
+            else:
+                historical_actions = actions_train
+                historical_discounted_rewards = discounted_rewards_train
+                historical_gamestates = gamestates_train
         print('MODEL CHECKPOINT ',j)
-        model.fit(train_attack_gamestates,[train_attack_evs,train_attack_policy],epochs=training_dict['epochs'],verbose=1)
-        model.fit(train_defend_gamestates,[train_defend_evs,train_defend_policy],epochs=training_dict['epochs'],verbose=1)
+        model.fit(historical_gamestates,[historical_discounted_rewards,historical_actions],epochs=training_dict['epochs'],verbose=1)
         recent_model_path = model_path + str(j)
         model.save(recent_model_path)
         #Save tree
@@ -435,7 +450,7 @@ def trigger(inputs):
         print(i,'ith iteration')
     return train_attack_gamestates,train_attack_evs,train_attack_policy,train_defend_gamestates,train_defend_evs,train_defend_policy
 
-def train_on_batch(durak,training_dict):
+def train_on_batch_multi(durak,training_dict):
     print('TRAINING ON BATCH')
     tic = time.time()
     model_path = training_dict['model_path']
@@ -464,7 +479,7 @@ def train_on_batch(durak,training_dict):
     print("Training on batch took ",str((toc-tic)/60),'Minutes')
 
 
-def train_on_batch_save(durak,training_dict):
+def train_on_batch(durak,training_dict):
     print('TRAINING ON BATCH')
     tic = time.time()
     model_path = training_dict['model_path']
@@ -532,6 +547,21 @@ def train_on_batch_save(durak,training_dict):
     print(durak.results[0],durak.results[1])
     toc = time.time()
     print("Training on batch took ",str((toc-tic)/60),'Minutes')
+
+def return_everything_train_rl(actions,gamestates,discounted_rewards):
+    a = discounted_rewards.shape[0]
+    states_list = [pickle.loads(binascii.unhexlify(state.encode('ascii'))) for state in gamestates]
+    states = np.vstack(states_list)
+    player_actions = np.zeros(53)
+    player_actions[int(actions[0])] = 1
+    if len(actions) > 1:
+        for act in actions[1:]:
+            temp = np.zeros(53)
+            temp[int(act)] = 1
+            player_actions = np.vstack((player_actions,temp))
+    else:
+        player_actions = player_actions.reshape(a,53)
+    return player_actions,states,discounted_rewards.reshape(a,1)
 
 def return_everything_train(attacks,attack_evs,attack_gamestates,defends,defend_evs,defend_gamestates):
     a = attack_evs.shape[0]

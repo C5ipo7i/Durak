@@ -19,7 +19,8 @@ model_names = [VEmbed_full]
 #defending_model_path = os.path.join(os.path.dirname(sys.argv[0]),'defend_model20000')
 attacking_model_path = '/home/shuza/Code/Durak/attack_models/attack_model50k'
 defending_model_path = '/home/shuza/Code/Durak/defend_models/defend_model50k'
-model_path = '/home/shuza/Code/Durak/durak_models/single_model1'
+# model_path = '/home/shuza/Code/Durak/durak_models/single_model1'
+model_path = '/Users/Shuza/Code/Durak/durak_models/single_model0'
 model_paths = [model_path,model_path]
 tree_endgame_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree_endgame')
 tree_path = os.path.join(os.path.dirname(sys.argv[0]),'Tree/durak_tree')
@@ -42,7 +43,8 @@ initialization_params = {
     'tree_path':tree_path,
     'tree_endgame_path':tree_endgame_path,
     'print':200,
-    'rl':False
+    'rl':True,
+    'discount_factor':0.95
 }
 
 # train_endgame(initialization_params)
