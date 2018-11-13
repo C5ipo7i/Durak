@@ -29,7 +29,7 @@ initialization_params = {
     'single_model':True,
     'train_on_batch':True,
     'learning_cycles':1,
-    'iterations':51,
+    'iterations':5,
     'model_checkpoint':5000,
     'threshold':50,
     'model_names':model_names,

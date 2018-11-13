@@ -3,6 +3,7 @@ from durak_rl import Durak as DRL
 from tree_class import Tree,Node
 from durak_utils import model_decision,model_decision_rl,return_emb_vector,deck
 from durak_models import VEmbed,VEmbed_full
+from itertools import chain
 
 from multiprocessing import Pool
 import time
@@ -345,33 +346,44 @@ def train_on_batch_rl(durak,training_dict):
             played_2_game_states = np.hstack((played_2_game_states))
             if first_outcome > 0:
                 #we train on positive outcomes or draws only
-                actions = played_1_actions
-                game_states = played_1_game_states
+                # actions = played_1_actions
+                # game_states = played_1_game_states
                 player_1_length = played_1_game_states.shape[0]
-                player_1_rewards = np.full(player_1_length,first_outcome)
-                discounted_rewards = np.array([1*discount_factor**i for i in range(0,player_1_length)])
-                game_states = played_1_game_states
+                player_2_length = played_2_game_states.shape[0]
+                total_length = player_1_length + player_2_length
+                blank_actions = np.zeros((player_2_length,53))
+                discounted_rewards_pos = np.array([1*discount_factor**i for i in range(0,player_1_length)])
+                discounted_rewards_neg = np.array([-1*discount_factor**i for i in range(0,player_2_length)])
+                discounted_rewards = np.hstack((discounted_rewards_pos,discounted_rewards_neg)).reshape(total_length,1)
+                game_states = np.hstack((played_1_game_states,played_2_game_states))
+                actions_train,gamestates_train,discounted_rewards_train = return_everything_train_rl(played_1_actions,game_states,discounted_rewards)
+                actions_train = np.vstack((actions_train,blank_actions))
+                #train on negative outcomes with zero'd out actions and EVs
             elif second_outcome > 0:
-                actions = played_2_actions
-                game_states = played_2_game_states
-                player_2_length = played_2_game_states.shape[0]
-                player_2_rewards = np.full(player_2_length,second_outcome)
-                discounted_rewards = np.array([1*discount_factor**i for i in range(0,player_2_length)])
-                game_states = played_2_game_states
-            else:
-                #draw train on both
-                player_2_length = played_2_game_states.shape[0]
-                player_2_rewards = np.full(player_2_length,second_outcome)
-                discounted_rewards_2 = np.array([1*discount_factor**i for i in range(0,player_2_length)])
                 player_1_length = played_1_game_states.shape[0]
-                player_1_rewards = np.full(player_1_length,first_outcome)
+                player_2_length = played_2_game_states.shape[0]
+                total_length = player_1_length + player_2_length
+                blank_actions = np.zeros((player_1_length,53))
+                discounted_rewards_pos = np.array([1*discount_factor**i for i in range(0,player_2_length)])
+                discounted_rewards_neg = np.array([-1*discount_factor**i for i in range(0,player_1_length)])
+                discounted_rewards = np.hstack((discounted_rewards_pos,discounted_rewards_neg)).reshape(total_length,1)
+                game_states = np.hstack((played_2_game_states,played_1_game_states))
+                actions_train,gamestates_train,discounted_rewards_train = return_everything_train_rl(played_2_actions,game_states,discounted_rewards)
+                actions_train = np.vstack((actions_train,blank_actions))
+            else:
+            #draw train on both
+                player_2_length = played_2_game_states.shape[0]
+                player_1_length = played_1_game_states.shape[0]
+                total_length = player_1_length + player_2_length
+                discounted_rewards_2 = np.array([1*discount_factor**i for i in range(0,player_2_length)])
                 discounted_rewards_1 = np.array([1*discount_factor**i for i in range(0,player_1_length)])
-                discounted_rewards = np.hstack((discounted_rewards_1,discounted_rewards_2))
-                actions = np.vstack((played_1_actions,played_2_actions))
-                game_states = [played_1_game_states,played_2_game_states]
+                discounted_rewards = np.hstack((discounted_rewards_1,discounted_rewards_2)).reshape(total_length,1)
+                actions = np.vstack((played_1_actions.reshape(player_1_length,1),played_2_actions.reshape(player_2_length,1)))
+                game_states = np.hstack((played_1_game_states,played_2_game_states))
+                actions_train,gamestates_train,discounted_rewards_train = return_everything_train_rl(actions,game_states,discounted_rewards)
+        
+            #game_states = list(chain(*game_states_temp))
             #get model inputs
-            actions_train,gamestates_train,discounted_rewards_train = return_everything_train_rl(actions,game_states,discounted_rewards)
-            print('hi')
             if i != 0:
                 historical_gamestates = np.vstack((historical_gamestates,gamestates_train))
                 historical_discounted_rewards = np.vstack((historical_discounted_rewards,discounted_rewards_train))
@@ -380,13 +392,11 @@ def train_on_batch_rl(durak,training_dict):
                 historical_actions = actions_train
                 historical_discounted_rewards = discounted_rewards_train
                 historical_gamestates = gamestates_train
+            print(i)
         print('MODEL CHECKPOINT ',j)
         model.fit(historical_gamestates,[historical_discounted_rewards,historical_actions],epochs=training_dict['epochs'],verbose=1)
         recent_model_path = model_path + str(j)
         model.save(recent_model_path)
-        #Save tree
-        if training_dict['save_tree'] == True:
-            durak.save_tree(tree_path)
     #print results
     print('results')
     print(durak.results[0],durak.results[1])
