@@ -1,7 +1,7 @@
 from durak import Durak
 from durak_rl import Durak as DRL
 from tree_class import Tree,Node
-from durak_utils import model_decision,model_decision_rl,return_emb_vector,deck
+from durak_utils import model_decision,model_decision_rl,model_decision_rl_print,return_emb_vector,deck
 from durak_models import VEmbed,VEmbed_full
 from itertools import chain
 
@@ -179,7 +179,7 @@ def train_endgame(initialization_params):
         'discount_factor':initialization_params['discount_factor']
     }
     if initialization_params['rl'] == True:
-        function_list = [model_decision_rl,model_decision_rl]
+        function_list = [model_decision_rl_print,model_decision_rl_print]
         durak = DRL(deck,model_list,function_list,threshold)
         if initialization_params['train_on_batch'] == True:
             train_on_batch_rl(durak,training_dict)
