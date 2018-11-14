@@ -57,6 +57,8 @@ if __name__ == '__main__':
     # defend_models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'defend_models')
     # attack_model_path = os.path.join(attack_models_dir,'attack_model0')
     # defend_model_path = os.path.join(defend_models_dir,'defend_model0')
+    # models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'tournament_models'
+    # model_path = os.path.join(models_dir,'rl_model')
     models_dir = os.path.join(os.path.dirname(sys.argv[0]), 'durak_models')
     model_path = os.path.join(models_dir,'single_model0')
     play_vs_model_rl(model_path)

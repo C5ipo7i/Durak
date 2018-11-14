@@ -85,7 +85,8 @@ def round_robin_split():
 def round_robin():
     #Round Robin
     #Load models
-    model_dir = os.path.join(os.path.dirname(sys.argv[0]), 'durak_models')
+    #model_dir = os.path.join(os.path.dirname(sys.argv[0]), 'durak_models')
+    model_dir = os.path.join(os.path.dirname(sys.argv[0]), 'tournament_models')
     models = []
     model_names = []
     for file in os.listdir(model_dir):

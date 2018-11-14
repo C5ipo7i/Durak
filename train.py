@@ -1,5 +1,6 @@
 from durak import Durak
 from durak_rl import Durak as DRL
+from durak_multi import Durak as DM
 from tree_class import Tree,Node
 from durak_utils import model_decision,model_decision_rl,model_decision_rl_print,return_emb_vector,deck
 from durak_models import VEmbed,VEmbed_full
@@ -409,7 +410,7 @@ def trigger(inputs):
     model_list = dictionary['model_list']
     threshold = dictionary['threshold']
     function_list = [model_decision,model_decision]
-    durak = Durak(deck,model_list,function_list,threshold)
+    durak = DM(deck,model_list,dictionary['graph'],function_list,threshold)
     iterations = dictionary['iterations']
     start = dictionary['start']
     if start == 'endgame':
@@ -470,6 +471,11 @@ def train_on_batch(durak,training_dict):
     model = training_dict['model']
     for model in training_dict['model_list']:
         model._make_predict_function
+    sess = tf.Session()
+    sess.run(tf.global_variables_initializer())
+    default_graph = tf.get_default_graph()
+    default_graph.finalize()
+    training_dict['graph'] = default_graph
     tree_path = training_dict['tree_path']
     start = training_dict['start']
     previous_winner = training_dict['previous_winner']

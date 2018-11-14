@@ -23,17 +23,18 @@ add a cards given to opponent vector so that the bot knows what cards the oppone
 """
 
 class Durak(object):
-    def __init__(self,deck,models,funcs,threshold=100,num_players=2,trunk=None,play=False,tournament=False):
+    def __init__(self,deck,models,funcs,graph,threshold=100,num_players=2,trunk=None,play=False,tournament=False):
         self.deck = deque(deck)
         self.num_players = num_players
         self.players = []
         self.models = models
         self.threshold = threshold
         self.play = play
+        self.graph = graph
         # if self.play == False: #don't need this because we are using 2 models always
         # if tournament == False:
-        self.models[-1]._make_predict_function()
-        self.models[-2]._make_predict_function()
+        # self.models[-1]._make_predict_function()
+        # self.models[-2]._make_predict_function()
         # else: #Going back to single model for both attack and defense
         #     # self.models[0][0]._make_predict_function()
         #     # self.models[0][1]._make_predict_function()
