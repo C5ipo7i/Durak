@@ -1,5 +1,6 @@
 from random import shuffle
 from random import choice
+from collections import deque
 import sys
 import os
 import numpy as np
@@ -23,7 +24,7 @@ add a cards given to opponent vector so that the bot knows what cards the oppone
 
 class Durak(object):
     def __init__(self,deck,models,funcs,threshold=100,num_players=2,trunk=None,play=False,tournament=False):
-        self.deck = deck
+        self.deck = deque(deck)
         self.num_players = num_players
         self.players = []
         self.models = models
@@ -31,8 +32,8 @@ class Durak(object):
         self.play = play
         # if self.play == False: #don't need this because we are using 2 models always
         # if tournament == False:
-        self.models[-1]._make_predict_function()
-        self.models[-2]._make_predict_function()
+        # self.models[-1]._make_predict_function()
+        # self.models[-2]._make_predict_function()
         # else: #Going back to single model for both attack and defense
         #     # self.models[0][0]._make_predict_function()
         #     # self.models[0][1]._make_predict_function()
@@ -62,7 +63,7 @@ class Durak(object):
         self.trunk = tree
         
     def start_from_state(self,game_state_dict):
-        self.play_deck = copy.deepcopy(game_state_dict['deck'])
+        self.play_deck = game_state_dict['deck'].copy()
         self.players = []
         #player1
         hand1 = copy.deepcopy(game_state_dict['hand1'])
@@ -84,28 +85,29 @@ class Durak(object):
         previous_winner = (False,0)
         first_root = self.trunk.get_child(attacking_player)
         second_root = self.trunk.get_child((attacking_player + 1)%2)
-
         discard_pile = copy.deepcopy(game_state_dict['discard_pile'])
         discard_pile_1hot = copy.deepcopy(game_state_dict['discard_pile_1hot'])
         self.game_state = Game_state(trump_card,trump_card_vec,trump_suit,len(self.play_deck),attacking_player,previous_winner,first_root,second_root,attacking_player,discard_pile=discard_pile,discard_pile_1hot=discard_pile_1hot)
         
     def init_game(self,previous_winner):
-        self.play_deck = copy.deepcopy(self.deck)
+        self.play_deck = self.deck.copy()
         shuffle(self.play_deck)
         self.players = []
         for player_id in range(self.num_players):
             #switching to dealing off the front. Then we can append the trump card to the end
-            hand = self.play_deck[:6]
+            hand = [(self.play_deck.pop())]
+            hand.append(self.play_deck.pop())
+            hand.append(self.play_deck.pop())
+            hand.append(self.play_deck.pop())
+            hand.append(self.play_deck.pop())
+            hand.append(self.play_deck.pop())
             hand_1hot = convert_str_to_1hot(hand)
-            del self.play_deck[:6]
             pl = Player(hand,hand_1hot,player_id)
             self.players.append(pl)
         trump_card = self.play_deck[0]
         trump_card_vec = convert_str_to_1hot([trump_card])[0]
         trump_suit = trump_card[1]
 #         print(trump_card,'trump card')
-        self.play_deck.append(self.play_deck[0])
-        self.play_deck.pop(0)
         attacking_player = self.who_starts(previous_winner)
         #Tree
         first_root = self.trunk.get_child(attacking_player)
@@ -145,7 +147,7 @@ class Durak(object):
     def draw_cards(self,player_id):
         if len(self.play_deck) > 0:
             while len(self.players[player_id].hand) < 6 and len(self.play_deck) > 0:
-                self.players[player_id].hand.append(self.play_deck.pop(0))
+                self.players[player_id].hand.append(self.play_deck.pop())
             self.players[player_id].hand_1hot = convert_str_to_1hot(self.players[player_id].hand)
         
     def who_starts(self,previous_winner):
@@ -292,22 +294,18 @@ class Durak(object):
     def remove_card(self,attack,player_id,decision):
         #remove card from player's hand
 #         print(attack,player_id,decision,'remove_card vars')
-        for i in range(len(self.players[player_id].hand)):
+        for i in range(len(self.players[player_id].hand_1hot)):
             if np.where(self.players[player_id].hand_1hot[i]==1) == decision:
                 #add card to played cards list and played card
                 if attack == True:
-                    self.game_state.played_card = self.players[player_id].hand[i]
-                    self.game_state.played_card_1hot = self.players[player_id].hand_1hot[i]
+                    self.game_state.played_card = self.players[player_id].hand.pop(i)
+                    self.game_state.played_card_1hot = self.players[player_id].hand_1hot.pop(i)
                     self.game_state.played_cards.append(self.game_state.played_card)
                     self.game_state.played_cards_1hot.append(self.game_state.played_card_1hot)
                     #remove card from hand
-                    self.players[player_id].hand.pop(i)
-                    self.players[player_id].hand_1hot.pop(i)
                 else:
-                    self.game_state.played_cards.append(self.players[player_id].hand[i])
-                    self.game_state.played_cards_1hot.append(self.players[player_id].hand_1hot[i])
-                    self.players[player_id].hand.pop(i)
-                    self.players[player_id].hand_1hot.pop(i)
+                    self.game_state.played_cards.append(self.players[player_id].hand.pop(i))
+                    self.game_state.played_cards_1hot.append(self.players[player_id].hand_1hot.pop(i))
                 break
         
     def is_round_over(self):
@@ -324,10 +322,7 @@ class Durak(object):
             self.game_state.round_over = True
             if self.game_state.picked_up == True:
                 #attacker draws
-                if len(self.play_deck) > 0:
-                    self.draw_cards(self.game_state.attacking_player)
-                else:
-                    pass
+                self.draw_cards(self.game_state.attacking_player)
             else:
 #                 print('successful defense')
                 #successful defense, both draw

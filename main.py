@@ -43,7 +43,7 @@ initialization_params = {
     'tree_path':tree_path,
     'tree_endgame_path':tree_endgame_path,
     'print':200,
-    'rl':True,
+    'rl':False,
     'discount_factor':0.95
 }
 

@@ -412,11 +412,14 @@ def trigger(inputs):
     durak = Durak(deck,model_list,function_list,threshold)
     iterations = dictionary['iterations']
     start = dictionary['start']
+    if start == 'endgame':
+        init = training_dict['situation_dict']
+        prep = durak.start_from_state
+    else:
+        init = previous_winner
+        prep = durak.init_game
     for i in range(iterations):
-        if start == 'endgame':
-            durak.start_from_state(training_dict['situation_dict'])
-        else:
-            durak.init_game(previous_winner)
+        prep(init)
         durak.play_game()
         first_outcome = durak.players[durak.game_state.first_player].outcome
         second_outcome = durak.players[(durak.game_state.first_player + 1)%2].outcome
@@ -460,18 +463,20 @@ def trigger(inputs):
         print(i,'ith iteration')
     return train_attack_gamestates,train_attack_evs,train_attack_policy,train_defend_gamestates,train_defend_evs,train_defend_policy
 
-def train_on_batch_multi(durak,training_dict):
+def train_on_batch(durak,training_dict):
     print('TRAINING ON BATCH')
     tic = time.time()
     model_path = training_dict['model_path']
     model = training_dict['model']
+    for model in training_dict['model_list']:
+        model._make_predict_function
     tree_path = training_dict['tree_path']
     start = training_dict['start']
     previous_winner = training_dict['previous_winner']
     pool = Pool(processes=2)
     #training env
     for j in range(training_dict['learning_cycles']):
-        inputs = [[training_dict],[training_dict],[training_dict],[training_dict]]
+        inputs = [[training_dict],[training_dict]]
         results = pool.map(trigger,inputs)
         print(results,'results')
         print('MODEL CHECKPOINT ',j)
@@ -489,7 +494,7 @@ def train_on_batch_multi(durak,training_dict):
     print("Training on batch took ",str((toc-tic)/60),'Minutes')
 
 
-def train_on_batch(durak,training_dict):
+def train_on_batch_save(durak,training_dict):
     print('TRAINING ON BATCH')
     tic = time.time()
     model_path = training_dict['model_path']
@@ -497,13 +502,16 @@ def train_on_batch(durak,training_dict):
     tree_path = training_dict['tree_path']
     start = training_dict['start']
     previous_winner = training_dict['previous_winner']
+    if start == 'endgame':
+        inputs = training_dict['situation_dict']
+        prep = durak.start_from_state
+    else:
+        inputs = previous_winner
+        prep = durak.init_game
     #training env
     for j in range(training_dict['learning_cycles']):
         for i in range(training_dict['iterations']):
-            if start == 'endgame':
-                durak.start_from_state(training_dict['situation_dict'])
-            else:
-                durak.init_game(previous_winner)
+            prep(inputs)
             durak.play_game()
             first_outcome = durak.players[durak.game_state.first_player].outcome
             second_outcome = durak.players[(durak.game_state.first_player + 1)%2].outcome
@@ -544,6 +552,7 @@ def train_on_batch(durak,training_dict):
                 train_defend_gamestates = input_defend_gamestates
                 train_defend_evs = input_defend_evs
                 train_defend_policy = player_2_hot
+            print(i)
         print('MODEL CHECKPOINT ',j)
         model.fit(train_attack_gamestates,[train_attack_evs,train_attack_policy],epochs=training_dict['epochs'],verbose=1)
         model.fit(train_defend_gamestates,[train_defend_evs,train_defend_policy],epochs=training_dict['epochs'],verbose=1)
