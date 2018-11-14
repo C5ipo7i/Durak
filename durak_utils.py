@@ -303,6 +303,57 @@ def model_decision(possibility_vec,features,hand_vec,players,player_id,game_stat
         features.second_node.kind = 0
     return decision
 
+def model_decision_multi(possibility_vec,features,hand_vec,players,player_id,game_state,durak):
+    unknown_card = np.array(53)
+    possibilities = np.where(possibility_vec==1)[0]
+    model_emb_input = return_emb_vector(durak,features,game_state,hand_vec,possibility_vec,player_id)
+    if player_id == 0:
+        with self.graph.as_default():
+            model_ev,model_action = durak.models[0].predict(model_emb_input)
+    else:
+        with self.graph.as_default():
+            model_ev,model_action = durak.models[1].predict(model_emb_input)
+    model_action = np.add(model_action,durak.epsilon)
+    masked_choices = np.multiply(model_action.reshape(53,),possibility_vec)
+    probability_vector = np.divide(masked_choices,np.sum(masked_choices)).flatten()
+    if durak.tournament == False:
+        dice_roll = randint(0,100)
+    #     print(dice_roll,'dice_roll')
+        if dice_roll < durak.threshold:
+            decision = np.random.choice(durak.possibilities,p=probability_vector)
+        else:
+            decision = choice(possibilities)
+    else:
+        decision = np.random.choice(durak.possibilities,p=probability_vector)
+    bytestream = pickle.dumps(model_emb_input)
+    hex_data = binascii.hexlify(bytestream)
+    key = hex_data.decode('ascii')
+    subkey = str(decision)
+#     print(key,'key')
+#     print(subkey,'subkey')
+    if player_id == features.first_player:
+        #print(player_id,'first triggered')
+        features.first_node = features.first_node.get_child(key)
+        features.first_node.update_visit()
+        features.first_node.kind = 1
+        features.first_node.game_state = game_state
+        features.first_node.key = key
+        
+        features.first_node = features.first_node.get_child(subkey)
+        features.first_node.update_visit()
+        features.first_node.kind = 0
+    else:
+        #print(player_id,'second_node triggered')
+        features.second_node = features.second_node.get_child(key)
+        features.second_node.update_visit()
+        features.second_node.kind = 1
+        features.second_node.game_state = game_state
+        features.second_node.key = key
+        
+        features.second_node = features.second_node.get_child(subkey)
+        features.second_node.update_visit()
+        features.second_node.kind = 0
+    return decision
 
 def return_emb_vector(durak,features,game_state,hand_vec,possibility_vec,player_id):
     #making everything for embeddings
