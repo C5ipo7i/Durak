@@ -1,5 +1,5 @@
 # Durak
-Game Env for training on Durak
+Game Env for training on the Russian card game Durak
 
 Create the following folders:
 attack_models/
