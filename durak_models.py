@@ -652,7 +652,7 @@ def VEmbed(input_shape,policy_shape,alpha,reg_const):
     #print(policy_head_8.shape,'policy_head_8')
     
     #final policy decision
-    policies = Add()([policy_head1,policy_head2,policy_head3,policy_head_4,policy_head_5,policy_head_6,policy_head_7,policy_head_8])#,policy_head_4,policy_head_5,policy_head_6,policy_head_7,policy_head_8])
+    policies = Concatenate(axes=-1)([policy_head1,policy_head2,policy_head3,policy_head_4,policy_head_5,policy_head_6,policy_head_7,policy_head_8])#,policy_head_4,policy_head_5,policy_head_6,policy_head_7,policy_head_8])
     #print(policies.shape,'policies')
     policy_final = Dense(128)(policies)
     policy_final = LeakyReLU(alpha)(policy_final)

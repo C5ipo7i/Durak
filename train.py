@@ -413,7 +413,7 @@ def trigger(inputs):
     sess.run(tf.global_variables_initializer())
     default_graph = tf.get_default_graph()
     default_graph.finalize()
-    function_list = [model_decision,model_decision]
+    function_list = [model_decision_multi,model_decision_multi]
     durak = DM(deck,model_list,default_graph,function_list,threshold)
     iterations = dictionary['iterations']
     start = dictionary['start']
